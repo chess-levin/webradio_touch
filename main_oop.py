@@ -38,6 +38,13 @@ _logo_size        = _station_btn_size - 30
 _scroll_btn_width = 70
 
 
+class CTaFont(ctki.CTkFont):
+
+    def __init__(self):
+        super().__init__(size=20, weight="normal")
+
+
+
 class FrameCenter(ctki.CTkFrame):
 
     def __init__(self, master):
@@ -47,20 +54,38 @@ class FrameCenter(ctki.CTkFrame):
             self.grid_rowconfigure(0, weight=1)      
             self.grid(row=0, column=0, padx=75, sticky="ew")
 
-  
-class CTaFont(ctki.CTkFont):
 
-    def __init__(self):
-        super().__init__(size=20, weight="normal")
+class StateButton(ctki.CTkButton):
+    def __init__(self, master, selected_color):
+        super().__init__(master)
+
+        self.state = False
+        self.unselected_color = self._fg_color
+        self.selected_color = selected_color
+
+        self._command
+
+    def select(self):
+        self.state = True
+
+    def unselect(self):
+        self.state = False
+
+    def viewState(self):
+        if self.state:
+            self.configure(fg_color=self.selected_color)
+        else:
+            self.configure(fg_color=self.unselected_color)
+        
 
 
 
-class FrameHead(ctki.CTkFrame):
+class FrameInfo(ctki.CTkFrame):
 
     def __init__(self, master):
         super().__init__(master)
         
-        self.grid(row=0, column=0, padx=10, pady=10, sticky="new")
+        self.grid(row=2, column=0, padx=10, pady=10, sticky="new")
         self.grid_columnconfigure(0, weight=1)
 
         # create title-data label
@@ -92,7 +117,7 @@ class FrameFavs(ctki.CTkFrame):
         self.radio_var = ctki.IntVar(value=config["last_favlist"])
         self.fr_stations = fr_stations
 
-        self.grid(row=1, column=0, padx=10, pady=10, sticky="new")
+        self.grid(row=0, column=0, padx=10, pady=10, sticky="new")
 
         # create fav buttons
         for i in range(len(self.fav_list)):
@@ -130,7 +155,7 @@ class FrameStations(ctki.CTkFrame):
 
         self.prev = ""
 
-        self.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+        self.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
         # create scroll-left button
         self.btn_scroll_r = ctki.CTkButton(master=self, text="<<", width=_scroll_btn_width, height=_station_btn_size, state = self.scrollbtn_inactive, command=partial(self.btn_stations_scroll, -1))
@@ -293,7 +318,7 @@ class App(ctki.CTk):
 
         # configure grid layout
         self.fr_center = FrameCenter(self)
-        self.fr_head = FrameHead(self.fr_center)
+        self.fr_head = FrameInfo(self.fr_center)
         self.fr_stations = FrameStations(self.fr_center, self.fr_head, self.config, self.favorite_data, self.logos, self.media_player, self.vlc_instance)
         self.fr_favs = FrameFavs(self.fr_center, self.config, self.fr_stations)
         self.fr_volume = FrameVolume(self.fr_center, self.config, self.media_player, self.fr_head)
