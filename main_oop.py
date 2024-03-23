@@ -10,7 +10,6 @@ import sys
 import os
 
 
-
 if os.environ.get('DISPLAY','') == '':
     print('no display found. Using :0.0')
     os.environ.__setitem__('DISPLAY', ':0.0')
@@ -48,31 +47,13 @@ class FrameCenter(ctki.CTkFrame):
             self.grid_rowconfigure(0, weight=1)      
             self.grid(row=0, column=0, padx=75, sticky="ew")
 
-
-class StateButton(ctki.CTkButton):
-    def __init__(self, master, selected_color):
-        super().__init__(master)
-
-        self.state = False
-        self.unselected_color = self._fg_color
-        self.selected_color = selected_color
-
-        self._command
-
-    def select(self):
-        self.state = True
-
-    def unselect(self):
-        self.state = False
-
-    def viewState(self):
-        if self.state:
-            self.configure(fg_color=self.selected_color)
-        else:
-            self.configure(fg_color=self.unselected_color)
-        
-
   
+class CTaFont(ctki.CTkFont):
+
+    def __init__(self):
+        super().__init__(size=20, weight="normal")
+
+
 
 class FrameHead(ctki.CTkFrame):
 
@@ -83,11 +64,11 @@ class FrameHead(ctki.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
 
         # create title-data label
-        self.la_title = ctki.CTkLabel(master=self, text="Stopped", fg_color="transparent", font=ctki.CTkFont(size=20, weight="bold"))
+        self.la_title = ctki.CTkLabel(master=self, text="Stopped", fg_color="transparent", font=CTaFont())
         self.la_title.grid(row=0, column=0, sticky="w")
 
         # create date-time label
-        self.la_datetime = ctki.CTkLabel(master=self, text="Datetime", fg_color="transparent", font=ctki.CTkFont(size=20, weight="bold"))
+        self.la_datetime = ctki.CTkLabel(master=self, text="Datetime", fg_color="transparent", font=CTaFont())
         self.la_datetime.grid(row=0, column=1)
 
         self.update_datetime()
@@ -103,23 +84,28 @@ class FrameHead(ctki.CTkFrame):
 
 class FrameFavs(ctki.CTkFrame):
 
-    def __init__(self, master, fav_list, fr_stations):
+    def __init__(self, master, config, fr_stations):
         super().__init__(master)
-        
-        self.fav_list = fav_list
+
+        self.my_config = config
+        self.fav_list = config["favorites"]
+        self.radio_var = ctki.IntVar(value=config["last_favlist"])
         self.fr_stations = fr_stations
 
         self.grid(row=1, column=0, padx=10, pady=10, sticky="new")
-        #self.fr_favs.grid_columnconfigure(0, weight=1)
 
         # create fav buttons
         for i in range(len(self.fav_list)):
-            ctki.CTkButton(master=self, text=self.fav_list[i]["name"], height=40, command=partial(self.change_favorite_list, i)).grid(row=0, column=i, padx=3, sticky="ew")
+            self.grid_columnconfigure(i, weight=1)
+            ctki.CTkRadioButton(master=self, text=self.fav_list[i]["name"], 
+                font=ctki.CTkFont(size=20, weight="bold"),
+                width=40, height=40, radiobutton_width=12, radiobutton_height=12, border_width_unchecked=2,
+                value=i, variable=self.radio_var, command=self.select_fav).grid(row=0, column=i, padx=3, sticky="ew")
     
-    def change_favorite_list(self, i):
-        print(f"Change to favorit list {i} with name={self.fav_list[i]['name']}")
-        self.fr_stations.change_station_data(i)
-    
+    def select_fav(self):
+        print(f"Change to favorit list {self.radio_var.get()} with name={self.fav_list[self.radio_var.get()]['name']}")
+        self.fr_stations.change_station_data(self.radio_var.get())
+   
 
 
 class FrameStations(ctki.CTkFrame):
@@ -243,24 +229,28 @@ class FrameVolume(ctki.CTkFrame):
 
         self.fr_head = fr_head
         self.media_player = media_player
-        self.config = config
+        self.my_config = config
 
         #self.fr_volume = ctki.CTkFrame(self)
         self.grid(row=3, column=0, padx=10, pady=10, sticky="esw")
         self.grid_columnconfigure((0,1,2), weight=1)
 
         # create mute button
-        self.btn_mute = ctki.CTkButton(master=self, text="mute", width=_station_btn_size, height=50, command=self.btn_mute)
+        self.btn_mute = ctki.CTkButton(master=self, text="mute", width=_station_btn_size, height=50, command=self.btn_mute,
+                                       font=ctki.CTkFont(size=18, weight="bold"))
         self.btn_mute.grid(row=0, column=0, padx=0, pady=0, sticky="w")
 
         # create volume slider
         self.sl_volume = ctki.CTkSlider(master=self, from_=0, to=100, width=250, command=self.slider_event)
         self.sl_volume.configure(number_of_steps=25)
-        self.sl_volume.set(self.config["last_volume"])
+        self.sl_volume.set(self.my_config["last_volume"])
         self.sl_volume.grid(row=0, column=1, padx=0, pady=0, sticky="ew")
+        
+        self.media_player.audio_set_volume(self.my_config["last_volume"])
 
         # create stop button
-        self.btn_stop = ctki.CTkButton(master=self, text="stop", width=_station_btn_size, height=50, command=self.btn_stop)
+        self.btn_stop = ctki.CTkButton(master=self, text="stop", width=_station_btn_size, height=50, command=self.btn_stop,
+                                       font=ctki.CTkFont(size=18, weight="bold"))
         self.btn_stop.grid(row=0, column=3, padx=0, pady=0, sticky="e")
 
     def btn_mute(self):
@@ -305,7 +295,7 @@ class App(ctki.CTk):
         self.fr_center = FrameCenter(self)
         self.fr_head = FrameHead(self.fr_center)
         self.fr_stations = FrameStations(self.fr_center, self.fr_head, self.config, self.favorite_data, self.logos, self.media_player, self.vlc_instance)
-        self.fr_favs = FrameFavs(self.fr_center, self.config["favorites"], self.fr_stations)
+        self.fr_favs = FrameFavs(self.fr_center, self.config, self.fr_stations)
         self.fr_volume = FrameVolume(self.fr_center, self.config, self.media_player, self.fr_head)
 
 
@@ -355,7 +345,9 @@ def on_escape(event=None):
     app.destroy()
 
 
+print(f"Running Env {platform.system()}")
 _kiosk_mode= (platform.system() == "Linux")
+print("_kiosk_mode=",_kiosk_mode)
 
 if __name__ == "__main__":
     app = App(_kiosk_mode)
@@ -382,6 +374,4 @@ if __name__ == "__main__":
     # close window after 5s if `ESC` will not work
     #app.after(5000, app.destroy) 
     
-    print(f"Running Env {platform.system()}")
-
     app.mainloop()
