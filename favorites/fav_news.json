@@ -1,0 +1,27 @@
+[
+    {
+        "name": "NDR Info (HH)",
+        "url": "http://icecast.ndr.de/ndr/ndrinfo/hamburg/mp3/128/stream.mp3",
+        "logo": "dummy.jpg"
+    },
+    {
+        "name": "Deutschlandfunk AAC,192",
+        "url": "https://st01.sslstream.dlf.de/dlf/01/high/aac/stream.aac?aggregator=web",
+        "logo": "dummy.jpg"
+    },
+    {
+        "name": "Deutschlandfunk MP3,128",
+        "url": "https://st01.sslstream.dlf.de/dlf/01/128/mp3/stream.mp3?aggregator=web",
+        "logo": "dummy.jpg"
+    },
+    {
+        "name": "Dokumente&Debatten",
+        "url": "https://st04.sslstream.dlf.de/dlf/04/128/mp3/stream.mp3?aggregator=web",
+        "logo": "dummy.jpg"
+    },
+    {
+        "name": "Deutschlandfunk Kultur",
+        "url": "https://st02.sslstream.dlf.de/dlf/02/128/mp3/stream.mp3?aggregator=web",
+        "logo": "dummy.jpg"
+    }    
+]

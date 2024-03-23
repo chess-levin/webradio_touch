@@ -1,0 +1,12 @@
+[
+    {
+        "name": "ffn 80er",
+        "url": "https://player.ffn.de/ffn80er.mp3",
+        "logo": "ffn80er.png"
+    },
+    {
+        "name": "FluxFM 80er",
+        "url": "http://streams.fluxfm.de/80er/mp3-320/streams.fluxfm.de/",
+        "logo": "dummy.jpg"
+    }
+]

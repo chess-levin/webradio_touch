@@ -1,0 +1,27 @@
+{
+    "favorites": [
+        { 
+            "name": "Tanja",
+            "file": "fav_tanja.json"
+        }, 
+        { 
+            "name": "Sven",
+            "file": "fav_sven.json"
+        },
+        { 
+            "name": "Nachrichten",
+            "file": "fav_news.json"
+        },
+        { 
+            "name": "80er",
+            "file": "fav_80er.json"
+        },
+        { 
+            "name": "Fav5 (leer)",
+            "file": "fav_5.json"
+        }
+    ],
+    "last_favlist": 0,
+    "last_station": 1,
+    "last_volume": 75
+}

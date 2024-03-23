@@ -1,0 +1,47 @@
+[
+    {
+        "name": "Radio Bremen 1",
+        "url": "http://icecast.radiobremen.de/rb/bremeneins/live/mp3/128/stream.mp3",
+        "logo": "rb1.png"
+    },
+    {
+        "name": "Radio Bremen 2",
+        "url": "http://icecast.radiobremen.de/rb/bremenzwei/live/mp3/128/stream.mp3",
+        "logo": "rb2.jpg"
+    },
+    {
+        "name": "DR P4 (Bornholm)",
+        "url": "http://live-icy.gss.dr.dk/A/A06L.mp3",
+        "logo": "drp4.jpg"
+    },
+    {
+        "name": "NDR1 (NDS)",
+        "url": "http://icecast.ndr.de/ndr/ndr1niedersachsen/oldenburg/mp3/128/stream.mp3",
+        "logo": "ndr1.png"
+    },
+    {
+        "name": "NDR2 (HH)",
+        "url": "http://icecast.ndr.de/ndr/ndr2/hamburg/mp3/128/stream.mp3",
+        "logo": "ndr2.png"
+    },
+    {
+        "name": "NDR Info (HH)",
+        "url": "http://icecast.ndr.de/ndr/ndrinfo/hamburg/mp3/128/stream.mp3",
+        "logo": "ndrinfo.png"
+    },
+    {
+        "name": "Cork FM",
+        "url": "https://wg.cdn.tibus.net/96fm",
+        "logo": "cork_fm96.png"   
+    },
+    {
+        "name": "DLF Nova (128kb,mp3)",
+        "url": "http://st03.sslstream.dlf.de/dlf/03/128/mp3/stream.mp3",
+        "logo": "dlfnova.png"
+    },
+    {
+        "name": "WDR5",
+        "url": "http://wdr-wdr5-live.icecastssl.wdr.de/wdr/wdr5/live/mp3/128/stream.mp3",
+        "logo": "wdr5.jpg"
+    }
+]
