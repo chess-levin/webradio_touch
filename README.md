@@ -3,8 +3,11 @@
 
 ![picture of my webradio](/docs/touch_lcd_radio.jpg "picture of my webradio")
 
-## 
+## Parts
 
+* Rasberry 4 with Bookworm 64-bit
+* [Waveshare 7.9" Touch LCD](https://www.waveshare.com/7.9inch-hdmi-lcd.htm)
+* Bluetooth Speaker
 
 ## Resources
 ### TKinter
