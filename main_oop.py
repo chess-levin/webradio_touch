@@ -37,6 +37,8 @@ _station_btn_size = 200
 _logo_size        = _station_btn_size - 30
 _scroll_btn_width = 70
 
+_check_for_screensaver_ms = 5000
+_screensaver_after_s = 8
 
 class CTaFont(ctki.CTkFont):
 
@@ -44,39 +46,59 @@ class CTaFont(ctki.CTkFont):
         super().__init__(size=20, weight="normal")
 
 
+class FrameScreensaverContent(ctki.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
 
-class FrameCenter(ctki.CTkFrame):
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure((0,1), weight=1)
 
-    def __init__(self, master):
-            super().__init__(master)
+        self.parent = parent
+        # create date-time label
+        self.la_dtime = ctki.CTkLabel(master=self, text="Datetime", height=30, width=50, font=ctki.CTkFont(size=18, weight="bold"))
+        self.la_dtime.grid(row=0, column=0, padx=50, pady=10, sticky="ew")
 
-            self.grid_columnconfigure(0, weight=1)
-            self.grid_rowconfigure(0, weight=1)      
-            self.grid(row=0, column=0, padx=75, sticky="ew")
+         # create stop button
+        self.btn_stop = ctki.CTkButton(master=self, text="back",
+                                       height=30, width=50, command=self.btn_stop_screensaver, 
+                                       font=ctki.CTkFont(size=18, weight="bold"))
+        self.btn_stop.grid(row=1, column=0, padx=50, pady=10, sticky="ew")
+
+        #self.after(ms=1000, func=self.update_datetime)
+   
+
+    def btn_stop_screensaver(self):
+        print("Return from Screensaver")
+
+    def update_datetime(self):
+        self.la_dtime.configure(text=time.asctime())
+        self.after(ms=1000, func=self.update_datetime) 
 
 
-class StateButton(ctki.CTkButton):
-    def __init__(self, master, selected_color):
-        super().__init__(master)
+class FrameRadioContent(ctki.CTkFrame):
 
-        self.state = False
-        self.unselected_color = self._fg_color
-        self.selected_color = selected_color
+    def __init__(self, parent, config, vlc_instance, media_player, logos, favorite_data):
+        super().__init__(parent)
 
-        self._command
+        self.my_config = config
+        self.vlc_instance = vlc_instance
+        self.media_player = media_player
+        self.logos = logos
+        self.favorite_data = favorite_data
 
-    def select(self):
-        self.state = True
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure((0,1,2,3), weight=1)      
 
-    def unselect(self):
-        self.state = False
-
-    def viewState(self):
-        if self.state:
-            self.configure(fg_color=self.selected_color)
-        else:
-            self.configure(fg_color=self.unselected_color)
+        # configure grid layout
+        self.fr_info = FrameInfo(self)
+        self.fr_stations = FrameStations(self, self.fr_info, self.my_config, self.favorite_data, self.logos, self.media_player, self.vlc_instance)
+        self.fr_favs = FrameFavs(self, self.my_config, self.fr_stations)
+        self.fr_volume = FrameVolume(self, self.my_config, self.media_player, self.fr_info)
         
+        self.fr_favs.grid(row=0, column=0, padx=10, pady=10, sticky="new")
+        self.fr_stations.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+        self.fr_info.grid(row=2, column=0, padx=10, pady=10, sticky="new")
+        self.fr_volume.grid(row=3, column=0, padx=10, pady=10, sticky="esw")
 
 
 
@@ -85,7 +107,7 @@ class FrameInfo(ctki.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
         
-        self.grid(row=2, column=0, padx=10, pady=10, sticky="new")
+        #self.grid(row=2, column=0, padx=10, pady=10, sticky="new")
         self.grid_columnconfigure(0, weight=1)
 
         # create title-data label
@@ -117,7 +139,7 @@ class FrameFavs(ctki.CTkFrame):
         self.radio_var = ctki.IntVar(value=config["last_favlist"])
         self.fr_stations = fr_stations
 
-        self.grid(row=0, column=0, padx=10, pady=10, sticky="new")
+        #self.grid(row=0, column=0, padx=10, pady=10, sticky="new")
 
         # create fav buttons
         for i in range(len(self.fav_list)):
@@ -155,7 +177,7 @@ class FrameStations(ctki.CTkFrame):
 
         self.prev = ""
 
-        self.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+        #self.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
 
         # create scroll-left button
         self.btn_scroll_r = ctki.CTkButton(master=self, text="<<", width=_scroll_btn_width, height=_station_btn_size, state = self.scrollbtn_inactive, command=partial(self.btn_stations_scroll, -1))
@@ -256,8 +278,7 @@ class FrameVolume(ctki.CTkFrame):
         self.media_player = media_player
         self.my_config = config
 
-        #self.fr_volume = ctki.CTkFrame(self)
-        self.grid(row=3, column=0, padx=10, pady=10, sticky="esw")
+        #self.grid(row=3, column=0, padx=10, pady=10, sticky="esw")
         self.grid_columnconfigure((0,1,2), weight=1)
 
         # create mute button
@@ -296,13 +317,15 @@ class App(ctki.CTk):
     def __init__(self, kiosk_mode):
         super().__init__()
 
+        self.current_timestamp = time.time()
+
         # configure window
         self.title("RADIO & SHOWER")
         self.geometry(f"{_win_width}x{_win_height}")
-        self.configure(fg_color="#080808")
+        #self.configure(fg_color="#080808")
 
         if not kiosk_mode:
-            # fixed window size 
+        #    # fixed window size 
             self.minsize(_win_width, _win_height)
             self.maxsize(_win_width, _win_height)
 
@@ -316,21 +339,41 @@ class App(ctki.CTk):
         self.load_station_logos()
         self.load_favorites()
 
-        # configure grid layout
-        self.fr_center = FrameCenter(self)
-        self.fr_head = FrameInfo(self.fr_center)
-        self.fr_stations = FrameStations(self.fr_center, self.fr_head, self.config, self.favorite_data, self.logos, self.media_player, self.vlc_instance)
-        self.fr_favs = FrameFavs(self.fr_center, self.config, self.fr_stations)
-        self.fr_volume = FrameVolume(self.fr_center, self.config, self.media_player, self.fr_head)
+        self.index = 1
+        self.content_frames = []
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        self.content_frames.append(FrameRadioContent(self, self.my_config, self.vlc_instance, self.media_player, self.logos, self.favorite_data))
+        self.content_frames.append(FrameScreensaverContent(self))
+
+        self.change_content_frame()
+        
+    def change_content_frame(self):
+        self.content_frames[self.index].grid_forget()
+        self.index = (self.index + 1) % len(self.content_frames)
+        print(f"changeContent to {self.index}")
+        self.content_frames[self.index].grid()
+        self.after(5000, self.change_content_frame)
+
+
+#    def check_for_screensaver(self):
+#            print(f"{time.time() - self.current_timestamp}, {type(time.time())}")
+#            if (time.time() - self.current_timestamp > _screensaver_after_s):
+#                print("Start Screensaver!")
+#                self.tkraise(FrameScreensaverContent(self))
+#            
+#            self.after(_check_for_screensaver_ms, self.check_for_screensaver)
 
 
     def load_config(self):
         '''read config from JSON file'''
         with open(_config_json_path) as json_file:
-            self.config = json.load(json_file)
+            self.my_config = json.load(json_file)
         
         # Print the type of data variable
-        print(f"Loaded config {self.config} from {_config_json_path}")
+        print(f"Loaded config {self.my_config} from {_config_json_path}")
         
 
     def load_station_logos(self):
@@ -348,7 +391,7 @@ class App(ctki.CTk):
 
 
     def load_favorites(self):
-        for fav_fn in self.config["favorites"]:
+        for fav_fn in self.my_config["favorites"]:
             fav_path = _favorites_path + fav_fn["file"]
             print(f'Try to load favorite file {fav_path}')
             with open(fav_path) as json_file:
