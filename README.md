@@ -18,6 +18,9 @@
 * https://www.youtube.com/watch?v=WE1IuPOICxE
 * [Scrollable Frames](https://www.youtube.com/watch?v=Envp9yHb2Ho)
 * https://www.youtube.com/watch?v=A48414Lz7NM 
+* [Switch Frames](https://www.geeksforgeeks.org/tkinter-application-to-switch-between-different-page-frames/)
+* [MVC with Tkinter](https://nazmul-ahsan.medium.com/how-to-organize-multi-frame-tkinter-application-with-mvc-pattern-79247efbb02b)
+* [Professional GUI with TKinter inkl. Switch frames](https://medium.com/@mohit444123/sleek-and-professional-gui-with-tkinter-a-step-by-step-guide-4e9f82486380)
 
 ### Rasberry Pi
 * [Create Icon](https://www.youtube.com/watch?v=aWg_9VZjf1c)

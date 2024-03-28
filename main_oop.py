@@ -1,4 +1,5 @@
 import customtkinter as ctki
+import tkinter as tk 
 from PIL import Image
 from functools import partial
 import vlc
@@ -8,6 +9,7 @@ import glob
 import platform
 import sys
 import os
+import random
 
 
 if os.environ.get('DISPLAY','') == '':
@@ -21,63 +23,142 @@ ctki.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green",
 _win_width  = 1280
 _win_height = 400
 
+_icon_path          = "radio_icon.png"
 _config_json_path   = "config.json"
-_favorites_path     = "favorites/"
-_stations_logos_path = "logos/"
-_stations_logos_glob = _stations_logos_path + "*.??g"
+_favorites_path     = "favorites"
+_stations_logos_path = "logos"
+_stations_logos_glob = os.path.join(_stations_logos_path, "*.??g")
 _dummy_logo_fn         = "dummy.jpg"
-_station_default_logo_path = _stations_logos_path + _dummy_logo_fn 
+_station_default_logo_path = os.path.join(_stations_logos_path, _dummy_logo_fn)
 _station_empty_logo_fn = "empty.png"
 
 _station_empty = "empty"
 
-_station_slots  = 5
+_station_slots      = 5
+_screensaver_jump_ms = 15000
 
 _station_btn_size = 200
 _logo_size        = _station_btn_size - 30
 _scroll_btn_width = 70
 
 _check_for_screensaver_ms = 5000
-_screensaver_after_s = 8
+
 
 class CTaFont(ctki.CTkFont):
 
     def __init__(self):
         super().__init__(size=20, weight="normal")
 
+class FrameScreensaverDigiClockContent(ctki.CTkFrame):
+    def __init__(self, parent, return_to_radio_func):
+        super().__init__(parent)
+        self.return_to_radio_func = return_to_radio_func
+        self.la_clock = ctki.CTkLabel(master=self, text="HH:MM:SS", font=ctki.CTkFont(size=300, weight="normal"))
+        self.la_clock.grid(row=0, column=0, sticky="news")
+        self.grid_columnconfigure((0), weight=1)
+        self.grid_rowconfigure((0), weight=1)
+        self.la_clock.bind(sequence="<Button-1>", command=self.stop, add='+')
 
-class FrameScreensaverContent(ctki.CTkFrame):
-    def __init__(self, parent):
+    def stop(self, event):
+        print("Stop Screensaver")
+        self.after_cancel(self.tid_update_time)
+        self.return_to_radio_func()
+
+    def update_time(self):
+        current_time = time.strftime('%H:%M:%S')
+        self.la_clock.configure(text=current_time)
+        self.tid_update_time = self.after(1000, self.update_time)
+
+    def grid(self):
+        super().grid()
+        self.update_time()
+
+    def grid_forget(self):
+        super().grid_forget()
+    
+    def update_titel_info(self, station, title, logo):
+        pass
+
+
+class FrameScreensaverPlayingContent(ctki.CTkFrame):
+
+    def __init__(self, parent, return_func, logos, media_player):
         super().__init__(parent)
 
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure((0,1), weight=1)
-
         self.parent = parent
+        self.return_to_radio_func = return_func
+        self.logos = logos
+        self.media_player = media_player
+        self.bind(sequence="<Button-1>", command=self.stop, add='+')
+
+        self.max_cols = 5
+        self.grid_columnconfigure((0,1,2,3,4,self.max_cols), weight=0)
+        self.grid_rowconfigure((0,1,2,3), weight=1)
+       
+        self.current_col = 4
+
+        for i in range(0,6):
+            la_col = ctki.CTkLabel(master=self, text="", height=1, width=100, font=ctki.CTkFont(size=18, weight="normal"))
+            la_col.grid(row=0, column=i, padx=50, pady=10, sticky="")
+
         # create date-time label
-        self.la_dtime = ctki.CTkLabel(master=self, text="Datetime", height=30, width=50, font=ctki.CTkFont(size=18, weight="bold"))
-        self.la_dtime.grid(row=0, column=0, padx=50, pady=10, sticky="ew")
+        self.la_dtime = ctki.CTkLabel(master=self, text="Datetime", height=30, width=50, font=ctki.CTkFont(size=18, weight="normal"))
+        self.la_dtime.grid(row=0, column=self.current_col, padx=5, pady=20, sticky="ns")
+        self.la_dtime.bind(sequence="<Button-1>", command=self.stop, add='+')
+        
+        self.la_logo = ctki.CTkLabel(master=self, text="", image=self.logos[_dummy_logo_fn])
+        self.la_logo.grid(row=1, column=self.current_col, padx=5, pady=20, sticky="ns")
+        self.la_logo.bind(sequence="<Button-1>", command=self.stop, add='+')
 
-         # create stop button
-        self.btn_stop = ctki.CTkButton(master=self, text="back",
-                                       height=30, width=50, command=self.btn_stop_screensaver, 
-                                       font=ctki.CTkFont(size=18, weight="bold"))
-        self.btn_stop.grid(row=1, column=0, padx=50, pady=10, sticky="ew")
+        self.la_name = ctki.CTkLabel(master=self, text="Station", font=ctki.CTkFont(size=18, weight="normal") )
+        self.la_name.grid(row=2, column=self.current_col, padx=5, pady=20, sticky="ns")
+        self.la_name.bind(sequence="<Button-1>", command=self.stop, add='+')
 
-        #self.after(ms=1000, func=self.update_datetime)
-   
+        self.la_title = ctki.CTkLabel(master=self, text="Title-Info", height=30, width=50, font=ctki.CTkFont(size=22, weight="bold"))
+        self.la_title.grid(row=3, column=self.current_col, padx=5, pady=20, sticky="ns")
+        self.la_title.bind(sequence="<Button-1>", command=self.stop, add='+')
 
-    def btn_stop_screensaver(self):
-        print("Return from Screensaver")
+    def stop(self, event):
+        print("Stop Screensaver")
+        self.after_cancel(self.tid_move_content)
+        self.after_cancel(self.tid_update_datetime)
+        self.return_to_radio_func()
+        
+    def grid(self):
+        super().grid()
+        self.tid_move_content = self.after(ms=2000, func=self.move_content)
+        self.update_datetime()
+
+    def move_content(self):
+        #self.current_col = (self.current_col + 1) % 5
+        self.current_col = random.randint(0, self.max_cols)
+
+        self.la_dtime.grid_forget()
+        self.la_dtime.grid(column=self.current_col)
+        self.la_logo.grid_forget()
+        self.la_logo.grid(column=self.current_col)
+        self.la_name.grid_forget()
+        self.la_name.grid(column=self.current_col)
+        self.la_title.grid_forget()
+        self.la_title.grid(column=self.current_col)
+        self.tid_move_content = self.after(ms=_screensaver_jump_ms, func=self.move_content)
+    
+    def update_titel_info(self, station, title, logo):
+        if (not self.media_player.is_playing()):
+            title = "Stopped"
+        
+        self.la_logo.configure(image=self.logos[logo])
+        self.la_name.configure(text=station)
+        self.la_title.configure(text=title)
 
     def update_datetime(self):
         self.la_dtime.configure(text=time.asctime())
-        self.after(ms=1000, func=self.update_datetime) 
+        self.tid_update_datetime = self.after(ms=1000, func=self.update_datetime) 
 
 
 class FrameRadioContent(ctki.CTkFrame):
 
-    def __init__(self, parent, config, vlc_instance, media_player, logos, favorite_data):
+    def __init__(self, parent, config, vlc_instance, media_player, logos, favorite_data, func_update_titel_info ):
         super().__init__(parent)
 
         self.my_config = config
@@ -91,7 +172,7 @@ class FrameRadioContent(ctki.CTkFrame):
 
         # configure grid layout
         self.fr_info = FrameInfo(self)
-        self.fr_stations = FrameStations(self, self.fr_info, self.my_config, self.favorite_data, self.logos, self.media_player, self.vlc_instance)
+        self.fr_stations = FrameStations(self, self.fr_info.update_media, func_update_titel_info, self.my_config, self.favorite_data, self.logos, self.media_player, self.vlc_instance)
         self.fr_favs = FrameFavs(self, self.my_config, self.fr_stations)
         self.fr_volume = FrameVolume(self, self.my_config, self.media_player, self.fr_info)
         
@@ -151,21 +232,24 @@ class FrameFavs(ctki.CTkFrame):
     
     def select_fav(self):
         print(f"Change to favorit list {self.radio_var.get()} with name={self.fav_list[self.radio_var.get()]['name']}")
+        self.master.master.reset_timestamp()
         self.fr_stations.change_station_data(self.radio_var.get())
    
 
 
 class FrameStations(ctki.CTkFrame):
                                
-    def __init__(self, master, fr_head, config, favorite_data, logos, media_player, VlcInstance):
+    def __init__(self, master, func_update_meta_info, func_update_screensaver, config, favorite_data, logos, media_player, VlcInstance):
         super().__init__(master)
 
-        self.fr_head = fr_head
         self.config = config
         self.favorite_data = favorite_data
         self.logos = logos
         self.media_player = media_player
         self.VlcInstance = VlcInstance
+
+        self.func_update_meta_info = func_update_meta_info
+        self.func_update_screensaver = func_update_screensaver
 
         self.now_playing_idx = config["last_station"]
         self.active_fav_list_idx = config["last_favlist"]
@@ -233,11 +317,13 @@ class FrameStations(ctki.CTkFrame):
             self.prev = ""
 
     def btn_play_station(self, i):
+        self.master.master.reset_timestamp()
         self.select_station(i)
         self.media_player.play()
 
     def btn_stations_scroll(self, inc):
         '''value of inc can be on of {-1, +1} depending on which button was pressed'''
+        self.master.master.reset_timestamp()
         t = self.slot_first_sta + inc 
         if (t >= 0) and (t <= len(self.get_station_data()) - _station_slots):
             self.slot_first_sta = t
@@ -256,14 +342,15 @@ class FrameStations(ctki.CTkFrame):
         # print (f"Is player playing? {self.media_player.is_playing()}")
 
         if self.Media is not None:
-            m = self.Media.get_meta(12) # vlc.Meta 12: 'NowPlaying',
-            if m != self.prev:
-                self.prev = m
+            meta = self.Media.get_meta(12) # vlc.Meta 12: 'NowPlaying',
+            if meta != self.prev:
+                self.prev = meta
                 station_name = self.get_station_data()[self.now_playing_idx]["name"]
-                if m is None:
-                    m = "no info"
-                print(f"Now playing {station_name}: {m}")
-                self.fr_head.update_media(station_name, m)
+                if meta is None:
+                    meta = "no info"
+                print(f"Now playing {station_name}: {meta}")
+                self.func_update_meta_info(station_name, meta)
+                self.func_update_screensaver(station_name, meta, self.get_station_data()[self.now_playing_idx]["logo"])
 
         self.after(ms = 1000, func=self.update_meta)
 
@@ -302,13 +389,16 @@ class FrameVolume(ctki.CTkFrame):
     def btn_mute(self):
         self.media_player.audio_set_volume(0)
         self.sl_volume.set(0)
+        self.master.master.reset_timestamp()
 
     def btn_stop(self):
         self.media_player.stop()
         self.fr_head.update_media("", "Stopped")
+        self.master.master.reset_timestamp()
         
     def slider_event(self, value):
         self.media_player.audio_set_volume(int(value))
+        self.master.master.reset_timestamp()
 
 
 
@@ -317,15 +407,14 @@ class App(ctki.CTk):
     def __init__(self, kiosk_mode):
         super().__init__()
 
-        self.current_timestamp = time.time()
-
         # configure window
         self.title("RADIO & SHOWER")
         self.geometry(f"{_win_width}x{_win_height}")
         #self.configure(fg_color="#080808")
+        self.set_icon()
 
         if not kiosk_mode:
-        #    # fixed window size 
+        # fixed window size 
             self.minsize(_win_width, _win_height)
             self.maxsize(_win_width, _win_height)
 
@@ -339,32 +428,54 @@ class App(ctki.CTk):
         self.load_station_logos()
         self.load_favorites()
 
-        self.index = 1
+        self.index = 0
         self.content_frames = []
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        self.content_frames.append(FrameRadioContent(self, self.my_config, self.vlc_instance, self.media_player, self.logos, self.favorite_data))
-        self.content_frames.append(FrameScreensaverContent(self))
+        self.content_frames.append(FrameScreensaverPlayingContent(self, self.show_radio_content, self.logos, self.media_player))
+        self.content_frames.append(FrameScreensaverDigiClockContent(self, self.show_radio_content))
+        self.content_frames.append(FrameRadioContent(self, self.my_config, self.vlc_instance, self.media_player, self.logos, self.favorite_data, self.content_frames[0].update_titel_info))
+        self.content_frames[2].grid()
 
-        self.change_content_frame()
-        
-    def change_content_frame(self):
-        self.content_frames[self.index].grid_forget()
-        self.index = (self.index + 1) % len(self.content_frames)
-        print(f"changeContent to {self.index}")
-        self.content_frames[self.index].grid()
-        self.after(5000, self.change_content_frame)
+        #start screensaver check
+        self.reset_timestamp()
+        self.check_for_screensaver()
 
+    def set_icon(self):
+        self.iconpath = tk.PhotoImage(file=os.path.join("", _icon_path))
+        self.wm_iconbitmap()
+        self.iconphoto(False, self.iconpath)
 
-#    def check_for_screensaver(self):
-#            print(f"{time.time() - self.current_timestamp}, {type(time.time())}")
-#            if (time.time() - self.current_timestamp > _screensaver_after_s):
-#                print("Start Screensaver!")
-#                self.tkraise(FrameScreensaverContent(self))
-#            
-#            self.after(_check_for_screensaver_ms, self.check_for_screensaver)
+    def show_radio_content(self):
+        self.content_frames[0].grid_forget()
+        self.content_frames[1].grid_forget()
+        self.content_frames[2].grid()
+        self.reset_timestamp()
+        self.tid_check_for_screensaver = self.after(_check_for_screensaver_ms, self.check_for_screensaver)
+
+    def show_screensaver(self):
+        print("Start Screensaver!")
+        self.content_frames[2].grid_forget()
+        self.after_cancel(self.tid_check_for_screensaver)
+
+        if self.media_player.is_playing():
+            self.content_frames[0].grid()
+        else:
+            self.content_frames[1].grid()
+
+    def reset_timestamp(self):
+        self.current_timestamp = time.time()
+
+    def check_for_screensaver(self):
+        elapsed_time = time.time() - self.current_timestamp
+        print(f"Elapsed time (s) since last button pressed: {elapsed_time}")
+        if (elapsed_time > self.my_config["screensaver_after_s"]):
+            self.show_screensaver()
+        else:
+            self.tid_check_for_screensaver = self.after(_check_for_screensaver_ms, self.check_for_screensaver)
+
 
 
     def load_config(self):
@@ -379,21 +490,27 @@ class App(ctki.CTk):
     def load_station_logos(self):
         '''load station logos'''
 
+        default_logo = Image.open(_station_default_logo_path)
+        self.logos[_dummy_logo_fn] = ctki.CTkImage(default_logo, size=(_logo_size, _logo_size))
+
         for filename in glob.glob(_stations_logos_glob, recursive=False):
             try:
                 img = Image.open(filename)
             except OSError as e:
                 print(f"Unable to open {filename}. Using {_station_default_logo_path} instead. Details : {e}", file=sys.stderr)
-                img = Image.open(_station_default_logo_path)
+                img = default_logo
             
             self.logos[os.path.basename(filename)] = ctki.CTkImage(img, size=(_logo_size, _logo_size))
             print(f"added new logo 'f{os.path.basename(filename)}'")
 
+        print(f"All logos loaded {self.logos}")
 
     def load_favorites(self):
+        '''load favorit files'''
         for fav_fn in self.my_config["favorites"]:
-            fav_path = _favorites_path + fav_fn["file"]
+            fav_path = os.path.join(_favorites_path, fav_fn["file"])
             print(f'Try to load favorite file {fav_path}')
+
             with open(fav_path) as json_file:
                 station_data = json.load(json_file)
 
@@ -419,6 +536,10 @@ print("_kiosk_mode=",_kiosk_mode)
 
 if __name__ == "__main__":
     app = App(_kiosk_mode)
+
+    #photo = tk.PhotoImage(file = 'radio_icon.png')
+    #app.wm_iconphoto(False, photo)
+
 
     # https://stackoverflow.com/questions/47856817/tkinter-canvas-based-kiosk-like-program-for-raspberry-pi
     # --- fullscreen ---
