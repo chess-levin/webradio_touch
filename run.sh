@@ -4,4 +4,4 @@ cd ~/showerradio
 
 source showerradio_venv/bin/activate
 
-python3 main_oop.py
+python3 main_oop.py kiosk

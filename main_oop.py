@@ -12,11 +12,6 @@ import os
 import random
 
 
-if os.environ.get('DISPLAY','') == '':
-    print('no display found. Using :0.0')
-    os.environ.__setitem__('DISPLAY', ':0.0')
-
-
 ctki.set_appearance_mode("dark")  # Modes: "System" (standard), "Dark", "Light"
 ctki.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
@@ -43,6 +38,8 @@ _scroll_btn_width = 70
 
 _check_for_screensaver_ms = 5000
 
+def rgb2hex(r, g, b):
+    return '#{:02x}{:02x}{:02x}'.format(r, g, b)
 
 class CTaFont(ctki.CTkFont):
 
@@ -53,6 +50,9 @@ class FrameScreensaverDigiClockContent(ctki.CTkFrame):
     def __init__(self, parent, return_to_radio_func):
         super().__init__(parent)
         self.return_to_radio_func = return_to_radio_func
+        
+        self.gray = 232
+
         self.la_clock = ctki.CTkLabel(master=self, text="HH:MM:SS", font=ctki.CTkFont(size=300, weight="normal"))
         self.la_clock.grid(row=0, column=0, sticky="news")
         self.grid_columnconfigure((0), weight=1)
@@ -64,13 +64,23 @@ class FrameScreensaverDigiClockContent(ctki.CTkFrame):
         self.after_cancel(self.tid_update_time)
         self.return_to_radio_func()
 
+    def new_color(self):
+        self.gray -= 1
+        if self.gray < 5:
+            self.gray = 232
+
+        return rgb2hex(self.gray, self.gray, self.gray)
+
     def update_time(self):
         current_time = time.strftime('%H:%M:%S')
+        c = self.new_color()
+        self.la_clock.configure(text_color = c)
         self.la_clock.configure(text=current_time)
         self.tid_update_time = self.after(1000, self.update_time)
 
     def grid(self):
         super().grid()
+        self.gray = 232
         self.update_time()
 
     def grid_forget(self):
@@ -98,24 +108,24 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
         self.current_col = 4
 
         for i in range(0,6):
-            la_col = ctki.CTkLabel(master=self, text="", height=1, width=100, font=ctki.CTkFont(size=18, weight="normal"))
-            la_col.grid(row=0, column=i, padx=50, pady=10, sticky="")
+            la_col = ctki.CTkLabel(master=self, text="", height=1, width=200)
+            la_col.grid(row=0, column=i)
 
         # create date-time label
-        self.la_dtime = ctki.CTkLabel(master=self, text="Datetime", height=30, width=50, font=ctki.CTkFont(size=18, weight="normal"))
-        self.la_dtime.grid(row=0, column=self.current_col, padx=5, pady=20, sticky="ns")
+        self.la_dtime = ctki.CTkLabel(master=self, text="Datetime", font=ctki.CTkFont(size=18, weight="normal"))
+        self.la_dtime.grid(row=0, column=self.current_col, padx=5, pady=0, sticky="ns")
         self.la_dtime.bind(sequence="<Button-1>", command=self.stop, add='+')
         
         self.la_logo = ctki.CTkLabel(master=self, text="", image=self.logos[_dummy_logo_fn])
-        self.la_logo.grid(row=1, column=self.current_col, padx=5, pady=20, sticky="ns")
+        self.la_logo.grid(row=1, column=self.current_col, padx=5, pady=40, sticky="ns")
         self.la_logo.bind(sequence="<Button-1>", command=self.stop, add='+')
 
         self.la_name = ctki.CTkLabel(master=self, text="Station", font=ctki.CTkFont(size=18, weight="normal") )
-        self.la_name.grid(row=2, column=self.current_col, padx=5, pady=20, sticky="ns")
+        self.la_name.grid(row=2, column=self.current_col, padx=5, pady=40, sticky="ns")
         self.la_name.bind(sequence="<Button-1>", command=self.stop, add='+')
 
         self.la_title = ctki.CTkLabel(master=self, text="Title-Info", height=30, width=50, font=ctki.CTkFont(size=22, weight="bold"))
-        self.la_title.grid(row=3, column=self.current_col, padx=5, pady=20, sticky="ns")
+        self.la_title.grid(row=3, column=self.current_col, padx=5, pady=00, sticky="ns")
         self.la_title.bind(sequence="<Button-1>", command=self.stop, add='+')
 
     def stop(self, event):
@@ -126,6 +136,7 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
         
     def grid(self):
         super().grid()
+        print("grid")
         self.tid_move_content = self.after(ms=2000, func=self.move_content)
         self.update_datetime()
 
@@ -404,7 +415,7 @@ class FrameVolume(ctki.CTkFrame):
 
 class App(ctki.CTk):
     
-    def __init__(self, kiosk_mode):
+    def __init__(self):
         super().__init__()
 
         # configure window
@@ -413,7 +424,7 @@ class App(ctki.CTk):
         #self.configure(fg_color="#080808")
         self.set_icon()
 
-        if not kiosk_mode:
+        if not _kiosk_mode:
         # fixed window size 
             self.minsize(_win_width, _win_height)
             self.maxsize(_win_width, _win_height)
@@ -503,7 +514,7 @@ class App(ctki.CTk):
             self.logos[os.path.basename(filename)] = ctki.CTkImage(img, size=(_logo_size, _logo_size))
             print(f"added new logo 'f{os.path.basename(filename)}'")
 
-        print(f"All logos loaded {self.logos}")
+        print(f"loaded {len(self.logos)}")
 
     def load_favorites(self):
         '''load favorit files'''
@@ -529,13 +540,25 @@ def on_escape(event=None):
     print("escaped")
     app.destroy()
 
+# ---- Start -----
+    
+print(f"sys.argv={sys.argv}, len(sys.argv)={len(sys.argv)}")
+_kiosk_mode = False
+
+if (len(sys.argv) > 1):
+    if (sys.argv[1]=='kiosk'):
+        _kiosk_mode = True
+
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using :0.0')
+    os.environ.__setitem__('DISPLAY', ':0.0')
 
 print(f"Running Env {platform.system()}")
-_kiosk_mode= (platform.system() == "Linux")
+
 print("_kiosk_mode=",_kiosk_mode)
 
 if __name__ == "__main__":
-    app = App(_kiosk_mode)
+    app = App()
 
     #photo = tk.PhotoImage(file = 'radio_icon.png')
     #app.wm_iconphoto(False, photo)
@@ -549,11 +572,14 @@ if __name__ == "__main__":
     #root.overrideredirect(False) # so you have to set it back
 
     if _kiosk_mode:
+        print("Configure kiosk mode:")
         screen_width = app.winfo_screenwidth()
         screen_height = app.winfo_screenheight()
         app.attributes("-fullscreen", True) # run fullscreen
         app.wm_attributes("-topmost", True) # keep on top
     
+        print(f"screen_width x screen_height = {screen_width}x{screen_height}")
+
     #root.focus_set() # set focus on window
     # --- closing methods ---
 
