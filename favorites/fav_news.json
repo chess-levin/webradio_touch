@@ -2,12 +2,17 @@
     {
         "name": "NDR Info (HH)",
         "url": "http://icecast.ndr.de/ndr/ndrinfo/hamburg/mp3/128/stream.mp3",
-        "logo": "dummy.jpg"
+        "logo": "ndrinfo.png"
     },
     {
         "name": "Deutschlandfunk AAC,192",
         "url": "https://st01.sslstream.dlf.de/dlf/01/high/aac/stream.aac?aggregator=web",
         "logo": "dummy.jpg"
+    },
+    {
+        "name": "DLF Nova (128kb,mp3)",
+        "url": "http://st03.sslstream.dlf.de/dlf/03/128/mp3/stream.mp3",
+        "logo": "dlfnova.png"
     },
     {
         "name": "Deutschlandfunk MP3,128",
@@ -23,5 +28,5 @@
         "name": "Deutschlandfunk Kultur",
         "url": "https://st02.sslstream.dlf.de/dlf/02/128/mp3/stream.mp3?aggregator=web",
         "logo": "dummy.jpg"
-    }    
+    }
 ]
