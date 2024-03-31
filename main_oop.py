@@ -38,6 +38,9 @@ _scroll_btn_width = 70
 
 _check_for_screensaver_ms = 5000
 
+_min_brightness = 25
+_max_brightness = 200
+
 def rgb2hex(r, g, b):
     return '#{:02x}{:02x}{:02x}'.format(r, g, b)
 
@@ -47,12 +50,13 @@ class CTaFont(ctki.CTkFont):
         super().__init__(size=20, weight="normal")
 
 class FrameScreensaverDigiClockContent(ctki.CTkFrame):
+
     def __init__(self, parent, return_to_radio_func):
         super().__init__(parent)
         self.return_to_radio_func = return_to_radio_func
         
-        self.gray = 232
-
+        self.brightness = _max_brightness
+        self.conuter = -1
         self.la_clock = ctki.CTkLabel(master=self, text="HH:MM:SS", font=ctki.CTkFont(size=300, weight="normal"))
         self.la_clock.grid(row=0, column=0, sticky="news")
         self.grid_columnconfigure((0), weight=1)
@@ -65,11 +69,14 @@ class FrameScreensaverDigiClockContent(ctki.CTkFrame):
         self.return_to_radio_func()
 
     def new_color(self):
-        self.gray -= 1
-        if self.gray < 5:
-            self.gray = 232
+        if self.brightness < _min_brightness:
+            self.conuter = +1
+        if self.brightness > _max_brightness:
+            self.conuter = -1
 
-        return rgb2hex(self.gray, self.gray, self.gray)
+        self.brightness = self.brightness + self.conuter
+
+        return rgb2hex(self.brightness, self.brightness, self.brightness)
 
     def update_time(self):
         current_time = time.strftime('%H:%M:%S')
@@ -80,7 +87,7 @@ class FrameScreensaverDigiClockContent(ctki.CTkFrame):
 
     def grid(self):
         super().grid()
-        self.gray = 232
+        self.brightness = _max_brightness
         self.update_time()
 
     def grid_forget(self):
