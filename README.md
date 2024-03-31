@@ -17,7 +17,7 @@ Run `py3 main_oop.py kiosk` to start in fullscreen kiosk mode.
 
 ## VLC
 
-In case there are errors like this on startup
+In case there are errors like these on startup
 
 ``` 
 [000002635638b9b0] main libvlc error: stale plugins cache: modified C:\Program Files\VideoLAN\VLC\plugins\access\libaccess_concat_plugin.dll
@@ -32,7 +32,7 @@ In case there are errors like this on startup
 [000002635638b9b0] main libvlc error: stale plugins cache: modified C:\Program Files\VideoLAN\VLC\plugins\access\libdshow_plugin.dll
 ```
 
-execute
+execute as admin
 
 ```
 c:\programme\videolan\vlc\vlc-cache-gen.exe c:\programme\videolan\vlc\plugins\
