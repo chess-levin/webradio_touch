@@ -214,8 +214,8 @@ class FrameRadioContent(ctki.CTkFrame):
 
 class FrameInfo(ctki.CTkFrame):
 
-    def __init__(self, master):
-        super().__init__(master)
+    def __init__(self, parent):
+        super().__init__(parent)
         
         #self.grid(row=2, column=0, padx=10, pady=10, sticky="new")
         self.grid_columnconfigure(0, weight=1)
@@ -249,8 +249,8 @@ class FrameInfo(ctki.CTkFrame):
 
 class FrameFavs(ctki.CTkFrame):
 
-    def __init__(self, master, config, fr_stations):
-        super().__init__(master)
+    def __init__(self, parent, config, fr_stations):
+        super().__init__(parent)
 
         self.my_config = config
         self.fav_list = config["favorites"]
@@ -277,8 +277,8 @@ class FrameFavs(ctki.CTkFrame):
 
 class FrameStations(ctki.CTkScrollableFrame):
                                
-    def __init__(self, master, func_update_meta_info, func_update_screensaver, config, favorite_data, logos, media_player, VlcInstance, func_reset_timestamp, func_change_is_playing):
-        super().__init__(master, orientation='horizontal')
+    def __init__(self, parent, func_update_meta_info, func_update_screensaver, config, favorite_data, logos, media_player, VlcInstance, func_reset_timestamp, func_change_is_playing):
+        super().__init__(parent, orientation='horizontal')
 
         self.config = config
         self.favorite_data = favorite_data
@@ -376,8 +376,8 @@ class FrameStations(ctki.CTkScrollableFrame):
 
 class FrameVolume(ctki.CTkFrame):
 
-    def __init__(self, master, config, media_player, fr_info):
-        super().__init__(master)
+    def __init__(self, parent, config, media_player, fr_info):
+        super().__init__(parent)
 
         self.fr_info = fr_info
         self.media_player = media_player
