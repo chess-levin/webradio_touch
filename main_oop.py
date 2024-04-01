@@ -29,12 +29,10 @@ _station_empty_logo_fn = "empty.png"
 
 _station_empty = "empty"
 
-_station_slots      = 5
 _screensaver_jump_ms = 15000
 
-_station_btn_size = 200
-_logo_size        = _station_btn_size - 30
-_scroll_btn_width = 70
+_station_btn_size = 190
+_logo_size        = _station_btn_size - 40
 
 _check_for_screensaver_ms = 5000
 
@@ -143,7 +141,6 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
         
     def grid(self):
         super().grid()
-        print("grid")
         self.tid_move_content = self.after(ms=2000, func=self.move_content)
         self.update_datetime()
 
@@ -176,7 +173,7 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
 
 class FrameRadioContent(ctki.CTkFrame):
 
-    def __init__(self, parent, config, vlc_instance, media_player, logos, favorite_data, func_update_titel_info ):
+    def __init__(self, parent, config, vlc_instance, media_player, logos, favorite_data, func_update_titel_info, func_reset_timestamp ):
         super().__init__(parent)
 
         self.my_config = config
@@ -186,18 +183,19 @@ class FrameRadioContent(ctki.CTkFrame):
         self.favorite_data = favorite_data
 
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure((0,1,2,3), weight=1)      
+        self.grid_rowconfigure((0,1,2,3), weight=1)
+        self.grid(row=0, column=0, padx=0, pady=0, sticky="ew")
 
         # configure grid layout
         self.fr_info = FrameInfo(self)
-        self.fr_stations = FrameStations(self, self.fr_info.update_media, func_update_titel_info, self.my_config, self.favorite_data, self.logos, self.media_player, self.vlc_instance)
+        self.fr_stations = FrameStations(self, self.fr_info.update_media, func_update_titel_info, self.my_config, self.favorite_data, self.logos, self.media_player, self.vlc_instance, func_reset_timestamp)
         self.fr_favs = FrameFavs(self, self.my_config, self.fr_stations)
         self.fr_volume = FrameVolume(self, self.my_config, self.media_player, self.fr_info)
         
-        self.fr_favs.grid(row=0, column=0, padx=10, pady=10, sticky="new")
-        self.fr_stations.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
-        self.fr_info.grid(row=2, column=0, padx=10, pady=10, sticky="new")
-        self.fr_volume.grid(row=3, column=0, padx=10, pady=10, sticky="esw")
+        self.fr_favs.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        self.fr_stations.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        self.fr_volume.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
+        self.fr_info.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
 
 
 
@@ -216,6 +214,9 @@ class FrameInfo(ctki.CTkFrame):
         # create date-time label
         self.la_datetime = ctki.CTkLabel(master=self, text="Datetime", fg_color="transparent", font=CTaFont())
         self.la_datetime.grid(row=0, column=1)
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
         self.update_datetime()
 
@@ -243,10 +244,11 @@ class FrameFavs(ctki.CTkFrame):
         # create fav buttons
         for i in range(len(self.fav_list)):
             self.grid_columnconfigure(i, weight=1)
-            ctki.CTkRadioButton(master=self, text=self.fav_list[i]["name"], 
+            btn = ctki.CTkRadioButton(master=self, text=self.fav_list[i]["name"], 
                 font=ctki.CTkFont(size=20, weight="bold"),
-                width=40, height=40, radiobutton_width=12, radiobutton_height=12, border_width_unchecked=2,
-                value=i, variable=self.radio_var, command=self.select_fav).grid(row=0, column=i, padx=3, sticky="ew")
+                height=35, radiobutton_width=12, radiobutton_height=12, border_width_unchecked=2,
+                value=i, variable=self.radio_var, command=self.select_fav)
+            btn.grid(row=0, column=i, padx=3, pady=0, sticky="ew")
     
     def select_fav(self):
         print(f"Change to favorit list {self.radio_var.get()} with name={self.fav_list[self.radio_var.get()]['name']}")
@@ -255,16 +257,17 @@ class FrameFavs(ctki.CTkFrame):
    
 
 
-class FrameStations(ctki.CTkFrame):
+class FrameStations(ctki.CTkScrollableFrame):
                                
-    def __init__(self, master, func_update_meta_info, func_update_screensaver, config, favorite_data, logos, media_player, VlcInstance):
-        super().__init__(master)
+    def __init__(self, master, func_update_meta_info, func_update_screensaver, config, favorite_data, logos, media_player, VlcInstance, func_reset_timestamp):
+        super().__init__(master, orientation='horizontal')
 
         self.config = config
         self.favorite_data = favorite_data
         self.logos = logos
         self.media_player = media_player
         self.VlcInstance = VlcInstance
+        self.func_reset_timestamp = func_reset_timestamp
 
         self.func_update_meta_info = func_update_meta_info
         self.func_update_screensaver = func_update_screensaver
@@ -273,56 +276,45 @@ class FrameStations(ctki.CTkFrame):
         self.active_fav_list_idx = config["last_favlist"]
 
         self.Media = None
-        self.slot_first_sta = 0
+
         self.btn_station_slot = []
-        self.scrollbtn_inactive = (len(self.get_station_data()) <= _station_slots)
 
         self.prev = ""
 
-        #self.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid(row=0, column=0, sticky="news")
 
-        # create scroll-left button
-        self.btn_scroll_r = ctki.CTkButton(master=self, text="<<", width=_scroll_btn_width, height=_station_btn_size, state = self.scrollbtn_inactive, command=partial(self.btn_stations_scroll, -1))
-        self.btn_scroll_r.grid(row=0, column=0, padx=3, sticky="e")
-
-        # create scroll-right button
-        self.btn_scroll_l = ctki.CTkButton(master=self, text=">>", width=_scroll_btn_width, height=_station_btn_size, state = self.scrollbtn_inactive, command=partial(self.btn_stations_scroll, 1))
-        self.btn_scroll_l.grid(row=0, column=6, padx=3, pady=0, sticky="w")
-
-        self.setup_station_slots(0)
+        self.setup_station_slots()
         self.select_station(self.active_fav_list_idx)
         self.update_meta()
 
     def change_station_data(self, i):
         self.active_fav_list_idx = i
-        self.setup_station_slots(0)
+        for btn_station_slot in self.btn_station_slot:
+            btn_station_slot.destroy()
+
+        self.setup_station_slots()
 
     def get_station_data(self):
         return self.favorite_data[self.active_fav_list_idx]
 
-    def setup_station_slots(self, start_idx):
-        # create station slot buttons
-        slot_idx = 0
-        for i in range(start_idx, start_idx + _station_slots):
-                logo_fn = self.get_station_data()[i]["logo"]
-                #if (logo_fn == _dummy_logo_fn):
-                btn_text = self.get_station_data()[i]["name"]
-           
-                logo_img = self.logos[logo_fn]
-                btn_station_slot = ctki.CTkButton(master=self, compound="top", text=btn_text, image=logo_img, command=partial(self.btn_play_station, i))
-                btn_station_slot.grid(row=0, column=slot_idx+1, padx=3, pady=0)
+    def setup_station_slots(self):
+        '''create station slot buttons'''
+        
+        for i, station in enumerate(self.get_station_data()):
+            logo_fn = station["logo"]
+            logo_img = self.logos[logo_fn]
+            btn_text = station["name"]
+            
+            btn_station_slot = ctki.CTkButton(master=self, compound="top", text=btn_text, image=logo_img, command=partial(self.btn_play_station, i))
+            btn_station_slot.grid(row=0, column=i, padx=5, pady=7)
 
-                if (logo_fn == _station_empty_logo_fn):
-                    btn_station_slot.configure(state = "disabled")
-                
-                slot_idx += 1
+            if (logo_fn == _station_empty_logo_fn):
+                btn_station_slot.configure(state = "disabled")
 
-        if (len(self.get_station_data()) <= _station_slots):
-            self.btn_scroll_l.configure(state="disabled")
-            self.btn_scroll_r.configure(state="disabled")
-        else:
-            self.btn_scroll_l.configure(state="normal")
-            self.btn_scroll_r.configure(state="normal")
+            self.btn_station_slot.append(btn_station_slot)
+
 
     def select_station(self, i):
         print(f'selected i={i}, station={self.get_station_data()[i]["name"]}')
@@ -335,23 +327,9 @@ class FrameStations(ctki.CTkFrame):
             self.prev = ""
 
     def btn_play_station(self, i):
-        self.master.master.reset_timestamp()
+        self.func_reset_timestamp()
         self.select_station(i)
         self.media_player.play()
-
-    def btn_stations_scroll(self, inc):
-        '''value of inc can be on of {-1, +1} depending on which button was pressed'''
-        self.master.master.reset_timestamp()
-        t = self.slot_first_sta + inc 
-        if (t >= 0) and (t <= len(self.get_station_data()) - _station_slots):
-            self.slot_first_sta = t
-            self.setup_station_slots(self.slot_first_sta)
-
-        #todo: change of state does not work, is always active/normal
-        #self.btn_scroll_l.configure(state=(t==0))
-        #self.btn_scroll_l.configure(state=(t!=0))
-        #self.btn_scroll_r.configure(state=(t == len(self.get_station_data()) - _station_slots))
-        #self.btn_scroll_r.configure(state=(t != len(self.get_station_data()) - _station_slots))
 
     # https://stackoverflow.com/questions/70509728/how-to-get-audiostream-metadata-using-vlc-py
     def update_meta(self):
@@ -383,13 +361,14 @@ class FrameVolume(ctki.CTkFrame):
         self.media_player = media_player
         self.my_config = config
 
-        #self.grid(row=3, column=0, padx=10, pady=10, sticky="esw")
+        self.grid(row=3, column=0, padx=0, pady=0, sticky="esw")
         self.grid_columnconfigure((0,1,2), weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
         # create mute button
-        self.btn_mute = ctki.CTkButton(master=self, text="mute", width=_station_btn_size, height=50, command=self.btn_mute,
+        self.btn_mute = ctki.CTkButton(master=self, text="mute", width=_station_btn_size, height=40, command=self.btn_mute,
                                        font=ctki.CTkFont(size=18, weight="bold"))
-        self.btn_mute.grid(row=0, column=0, padx=0, pady=0, sticky="w")
+        self.btn_mute.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         # create volume slider
         self.sl_volume = ctki.CTkSlider(master=self, from_=0, to=100, width=250, command=self.slider_event)
@@ -400,9 +379,9 @@ class FrameVolume(ctki.CTkFrame):
         self.media_player.audio_set_volume(self.my_config["last_volume"])
 
         # create stop button
-        self.btn_stop = ctki.CTkButton(master=self, text="stop", width=_station_btn_size, height=50, command=self.btn_stop,
+        self.btn_stop = ctki.CTkButton(master=self, text="stop", width=_station_btn_size, height=40, command=self.btn_stop,
                                        font=ctki.CTkFont(size=18, weight="bold"))
-        self.btn_stop.grid(row=0, column=3, padx=0, pady=0, sticky="e")
+        self.btn_stop.grid(row=0, column=3, padx=5, pady=5, sticky="e")
 
     def btn_mute(self):
         self.media_player.audio_set_volume(0)
@@ -454,7 +433,7 @@ class App(ctki.CTk):
 
         self.content_frames.append(FrameScreensaverPlayingContent(self, self.show_radio_content, self.logos, self.media_player))
         self.content_frames.append(FrameScreensaverDigiClockContent(self, self.show_radio_content))
-        self.content_frames.append(FrameRadioContent(self, self.my_config, self.vlc_instance, self.media_player, self.logos, self.favorite_data, self.content_frames[0].update_titel_info))
+        self.content_frames.append(FrameRadioContent(self, self.my_config, self.vlc_instance, self.media_player, self.logos, self.favorite_data, self.content_frames[0].update_titel_info, self.reset_timestamp))
         self.content_frames[2].grid()
 
         #start screensaver check
@@ -469,7 +448,7 @@ class App(ctki.CTk):
     def show_radio_content(self):
         self.content_frames[0].grid_forget()
         self.content_frames[1].grid_forget()
-        self.content_frames[2].grid()
+        self.content_frames[2].grid(row=0, column=0, padx=5, pady=5, sticky="ew")
         self.reset_timestamp()
         self.tid_check_for_screensaver = self.after(_check_for_screensaver_ms, self.check_for_screensaver)
 
@@ -488,7 +467,7 @@ class App(ctki.CTk):
 
     def check_for_screensaver(self):
         elapsed_time = time.time() - self.current_timestamp
-        print(f"Elapsed time (s) since last button pressed: {elapsed_time}")
+        #print(f"Elapsed time (s) since last button pressed: {elapsed_time}")
         if (elapsed_time > self.my_config["screensaver_after_s"]):
             self.show_screensaver()
         else:
@@ -531,12 +510,6 @@ class App(ctki.CTk):
 
             with open(fav_path) as json_file:
                 station_data = json.load(json_file)
-
-                # fill station_data with dummy data (empty logos) when less than _station_slots loaded from json
-                if (len(station_data) <= _station_slots):
-                    print(f"Found only {_station_slots - len(station_data)} stations fill up to match {_station_slots} ")
-                    for _ in range(_station_slots - len(station_data) ):
-                        station_data.append(dict(name=_station_empty, url="", logo=_station_empty_logo_fn))
 
                 self.favorite_data.append(station_data)
 

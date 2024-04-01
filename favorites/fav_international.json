@@ -1,0 +1,22 @@
+[
+    {
+        "name": "DR P4 (Bornholm)",
+        "url": "http://live-icy.gss.dr.dk/A/A06L.mp3",
+        "logo": "drp4.jpg"
+    },
+    {
+        "name": "TopBlues (US)",
+        "url": "http://us3.internet-radio.com:8342/stream",
+        "logo": "dummy.jpg"
+    },
+    {
+        "name": "KCWR",
+        "url": "http://kcrw.streamguys1.com/kcrw_192k_mp3_on_air",
+        "logo": "dummy.jpg"
+    },
+    {
+        "name": "Cork FM",
+        "url": "https://wg.cdn.tibus.net/96fm",
+        "logo": "cork_fm96.png"   
+    }
+]

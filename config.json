@@ -13,16 +13,16 @@
             "file": "fav_news.json"
         },
         { 
-            "name": "80er",
+            "name": "60,70,80,90er",
             "file": "fav_80er.json"
         },
         { 
-            "name": "Fav5 (leer)",
-            "file": "fav_5.json"
+            "name": "International",
+            "file": "fav_international.json"
         }
     ],
     "last_favlist": 0,
     "last_station": 1,
     "last_volume": 75,
-    "screensaver_after_s" : 10
+    "screensaver_after_s" : 60
 }
