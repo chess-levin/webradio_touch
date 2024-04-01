@@ -3,9 +3,16 @@
 
 ![picture of webradio touch](/docs/assets/touch_lcd_radio.jpg "picture of my webradio")
 
-I changed the project platform to a Rasberry Pi after experimenting with an [ESP32 based webradio](https://github.com/chess-levin/esp32webradio). The wifi streaming performance of the ESP32 (Arduino platform) is not as good as expected and it is not possible to use Wifi and Bluetooth in parallel. Another requirement is the radio should automatically connect to a paired Bluetoothspeaker. That works as a charm with the raspi os.
+A few months ago I started the [first webradio project](https://github.com/chess-levin/esp32webradio) based on an ESP32 (Arduino API). I changed the project platform to a Rasberry Pi for several reasons:
+* The wifi streaming performance of the ESP32 (Arduino platform) is not as good as expected 
+* It is not possible to use Wifi and Bluetooth in parallel. 
+* It was not possible to find a way to automatically (re)connect an already paired Bluetoothspeaker
 
-My motivation for the new platform was to dive deeper into Python and GUI-development for touch displays. There is a [Python wrapper for VLC](https://pypi.org/project/python-vlc/), which does all the streaming in this project.
+All this issues working like a charm with the raspi.
+
+My motivation to choose this platform was to dive deeper into Python and GUI-development for touch displays. 
+
+There is a [Python wrapper for VLC](https://pypi.org/project/python-vlc/), which does all the streaming work in this project.
 
 I found [CustomTKinter](https://customtkinter.tomschimansky.com/) by Tom Schimansky and gave it try. It's a good looking and easy to use addition to [Tkinter](https://docs.python.org/3/library/tkinter.html).
 
