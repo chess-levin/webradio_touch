@@ -35,6 +35,7 @@ _station_btn_size = 190
 _logo_size        = _station_btn_size - 40
 
 _check_for_screensaver_ms = 5000
+_check_config_is_dirty_ms = 3000
 
 _min_brightness = 25
 _max_brightness = 200
@@ -43,6 +44,8 @@ _str_stopped    = "Stopped"
 _str_no_info    = "no info"
 _str_mute       = "mute"
 _str_unmute     = "unmute"
+
+_config_is_dirty   = False
 
 def state_by_bool(state):
     if state:
@@ -106,13 +109,11 @@ class FrameScreensaverDigiClockContent(ctki.CTkFrame):
 
         self.tid_update_time = self.after(1000, self.update_time)
 
-    def grid(self):
-        super().grid()
+    def activate(self):
+        super().grid(row=0, column=0, padx=0, pady=0, sticky="news")
         self.brightness = _max_brightness
         self.update_time()
 
-    def grid_forget(self):
-        super().grid_forget()
     
     def update_titel_info(self, station, title, logo):
         pass
@@ -131,7 +132,7 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
 
         self.max_cols = 5
         self.grid_columnconfigure((0,1,2,3,4,self.max_cols), weight=0)
-        self.grid_rowconfigure((0,1,2,3), weight=1)
+        self.grid_rowconfigure((0,1,2,3), weight=0)
        
         self.current_col = 4
 
@@ -141,19 +142,19 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
 
         # create date-time label
         self.la_dtime = ctki.CTkLabel(master=self, text="Datetime", font=ctki.CTkFont(size=18, weight="normal"))
-        self.la_dtime.grid(row=0, column=self.current_col, padx=5, pady=0, sticky="ns")
+        self.la_dtime.grid(row=0, column=self.current_col, padx=5, pady=0, sticky="")
         self.la_dtime.bind(sequence="<Button-1>", command=self.stop, add='+')
         
         self.la_logo = ctki.CTkLabel(master=self, text="", image=self.logos[_dummy_logo_fn])
-        self.la_logo.grid(row=1, column=self.current_col, padx=5, pady=40, sticky="ns")
+        self.la_logo.grid(row=1, column=self.current_col, padx=5, pady=40, sticky="")
         self.la_logo.bind(sequence="<Button-1>", command=self.stop, add='+')
 
         self.la_name = ctki.CTkLabel(master=self, text="Station", font=ctki.CTkFont(size=18, weight="normal") )
-        self.la_name.grid(row=2, column=self.current_col, padx=5, pady=40, sticky="ns")
+        self.la_name.grid(row=2, column=self.current_col, padx=5, pady=40, sticky="")
         self.la_name.bind(sequence="<Button-1>", command=self.stop, add='+')
 
         self.la_title = ctki.CTkLabel(master=self, text="Title-Info", height=30, width=50, font=ctki.CTkFont(size=22, weight="bold"))
-        self.la_title.grid(row=3, column=self.current_col, padx=5, pady=00, sticky="ns")
+        self.la_title.grid(row=3, column=self.current_col, padx=5, pady=0, sticky="")
         self.la_title.bind(sequence="<Button-1>", command=self.stop, add='+')
 
     def stop(self, event):
@@ -162,8 +163,8 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
         self.after_cancel(self.tid_update_datetime)
         self.return_to_radio_func()
         
-    def grid(self):
-        super().grid()
+    def activate(self):
+        self.grid(row=0, column=0, padx=0, pady=0, sticky="news")
         self.tid_move_content = self.after(ms=2000, func=self.move_content)
         self.update_datetime()
 
@@ -207,7 +208,8 @@ class FrameRadioContent(ctki.CTkFrame):
 
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure((0,1,2,3), weight=1)
-        self.grid(row=0, column=0, padx=0, pady=0, sticky="ew")
+        #self.grid(row=0, column=0, padx=0, pady=0, sticky="ew")
+        self.activate()
 
         # configure grid layout
         self.fr_info = FrameInfo(self)
@@ -222,7 +224,8 @@ class FrameRadioContent(ctki.CTkFrame):
         self.fr_volume.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
         self.fr_info.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
 
-
+    def activate(self):
+        self.grid(row=0, column=0, padx=0, pady=0, sticky="news")
 
 class FrameInfo(ctki.CTkFrame):
 
@@ -284,15 +287,18 @@ class FrameFavs(ctki.CTkFrame):
         print(f"Change to favorit list {self.radio_var.get()} with name={self.fav_list[self.radio_var.get()]['name']}")
         self.master.master.reset_timestamp()
         self.fr_stations.change_station_data(self.radio_var.get())
+        self.my_config["last_favlist"] = self.radio_var.get()
+        global _config_is_dirty
+        _config_is_dirty = True
+        
    
-
 
 class FrameStations(ctki.CTkScrollableFrame):
                                
     def __init__(self, parent, func_update_meta_info, func_update_screensaver, config, favorite_data, logos, media_player, VlcInstance, func_reset_timestamp, func_change_is_playing):
         super().__init__(parent, orientation='horizontal')
 
-        self.config = config
+        self.my_config = config
         self.favorite_data = favorite_data
         self.logos = logos
         self.media_player = media_player
@@ -302,8 +308,8 @@ class FrameStations(ctki.CTkScrollableFrame):
         self.func_update_meta_info = func_update_meta_info
         self.func_update_screensaver = func_update_screensaver
 
-        self.now_playing_idx = config["last_station"]
-        self.active_fav_list_idx = config["last_favlist"]
+        self.now_playing_idx = self.my_config["last_station"]
+        self.active_fav_list_idx = self.my_config["last_favlist"]
 
         self.Media = None
 
@@ -316,7 +322,7 @@ class FrameStations(ctki.CTkScrollableFrame):
         self.grid(row=0, column=0, sticky="news")
 
         self.setup_station_slots()
-        self.select_station(self.active_fav_list_idx)
+        self.select_station(self.now_playing_idx)
         self.update_meta()
 
     def change_station_data(self, i):
@@ -346,15 +352,18 @@ class FrameStations(ctki.CTkScrollableFrame):
             self.btn_station_slot.append(btn_station_slot)
 
 
-    def select_station(self, i):
-        print(f'selected i={i}, station={self.get_station_data()[i]["name"]}')
-        if (_station_empty != self.get_station_data()[i]["name"]):
+    def select_station(self, station_idx):
+        print(f'selected station_idx={station_idx}, station={self.get_station_data()[station_idx]["name"]}')
+        if (_station_empty != self.get_station_data()[station_idx]["name"]):
             self.media_player.stop()
-            self.Media = self.VlcInstance.media_new(self.get_station_data()[i]["url"])
+            self.Media = self.VlcInstance.media_new(self.get_station_data()[station_idx]["url"])
             self.Media.get_mrl()
             self.media_player.set_media(self.Media)
-            self.now_playing_idx = i
+            self.now_playing_idx = station_idx
             self.prev = ""
+            self.my_config["last_station"] = self.now_playing_idx
+            global _config_is_dirty
+            _config_is_dirty = True
 
     def btn_play_station(self, i):
         self.func_reset_timestamp()
@@ -452,6 +461,9 @@ class FrameVolume(ctki.CTkFrame):
     def slider_event(self, value):
         self.media_player.audio_set_volume(int(value))
         self.master.master.reset_timestamp()
+        self.my_config["last_volume"] = int(value)
+        global _config_is_dirty
+        _config_is_dirty = True
 
 
 
@@ -496,6 +508,19 @@ class App(ctki.CTk):
         self.reset_timestamp()
         self.check_for_screensaver()
 
+        if self.my_config["auto_save_config"]:
+            self.tid_save_config = self.after(_check_config_is_dirty_ms, self.save_config)
+
+    def save_config(self):
+        global _config_is_dirty
+        if (_config_is_dirty):
+            with open(_config_json_path, "w") as outfile: 
+                json.dump(self.my_config, outfile, indent=8)
+            print(f"Config saved to {_config_json_path}")
+            _config_is_dirty = False
+
+        self.tid_save_config = self.after(_check_config_is_dirty_ms, self.save_config)
+
     def set_icon(self):
         self.iconpath = tk.PhotoImage(file=os.path.join("", _icon_path))
         self.wm_iconbitmap()
@@ -504,7 +529,7 @@ class App(ctki.CTk):
     def show_radio_content(self):
         self.content_frames[0].grid_forget()
         self.content_frames[1].grid_forget()
-        self.content_frames[2].grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        self.content_frames[2].activate()
         self.reset_timestamp()
         self.tid_check_for_screensaver = self.after(_check_for_screensaver_ms, self.check_for_screensaver)
 
@@ -514,9 +539,9 @@ class App(ctki.CTk):
         self.after_cancel(self.tid_check_for_screensaver)
 
         if self.media_player.is_playing():
-            self.content_frames[0].grid()
+            self.content_frames[0].activate()
         else:
-            self.content_frames[1].grid()
+            self.content_frames[1].activate()
 
     def reset_timestamp(self):
         self.current_timestamp = time.time()
@@ -528,8 +553,6 @@ class App(ctki.CTk):
             self.show_screensaver()
         else:
             self.tid_check_for_screensaver = self.after(_check_for_screensaver_ms, self.check_for_screensaver)
-
-
 
     def load_config(self):
         '''read config from JSON file'''
