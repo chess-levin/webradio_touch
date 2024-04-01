@@ -25,19 +25,14 @@
         "logo": "ndr2.png"
     },
     {
-        "name": "NDR Info (HH)",
-        "url": "http://icecast.ndr.de/ndr/ndrinfo/hamburg/mp3/128/stream.mp3",
-        "logo": "ndrinfo.png"
-    },
-    {
         "name": "Cork FM",
         "url": "https://wg.cdn.tibus.net/96fm",
         "logo": "cork_fm96.png"   
     },
     {
-        "name": "DLF Nova (128kb,mp3)",
-        "url": "http://st03.sslstream.dlf.de/dlf/03/128/mp3/stream.mp3",
-        "logo": "dlfnova.png"
+        "name": "Berliner Rundfunk",
+        "url": "http://stream.berliner-rundfunk.de/brf/mp3-128/internetradio",
+        "logo": "dummy.jpg"
     },
     {
         "name": "WDR5",

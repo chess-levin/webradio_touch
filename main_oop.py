@@ -141,7 +141,6 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
         
     def grid(self):
         super().grid()
-        print("grid")
         self.tid_move_content = self.after(ms=2000, func=self.move_content)
         self.update_datetime()
 
@@ -193,10 +192,10 @@ class FrameRadioContent(ctki.CTkFrame):
         self.fr_favs = FrameFavs(self, self.my_config, self.fr_stations)
         self.fr_volume = FrameVolume(self, self.my_config, self.media_player, self.fr_info)
         
-        self.fr_favs.grid(row=0, column=0, padx=10, pady=10, sticky="new")
-        self.fr_stations.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
-        self.fr_info.grid(row=2, column=0, padx=10, pady=10, sticky="new")
-        self.fr_volume.grid(row=3, column=0, padx=10, pady=10, sticky="esw")
+        self.fr_favs.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        self.fr_stations.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+        self.fr_volume.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
+        self.fr_info.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
 
 
 
@@ -245,10 +244,11 @@ class FrameFavs(ctki.CTkFrame):
         # create fav buttons
         for i in range(len(self.fav_list)):
             self.grid_columnconfigure(i, weight=1)
-            ctki.CTkRadioButton(master=self, text=self.fav_list[i]["name"], 
+            btn = ctki.CTkRadioButton(master=self, text=self.fav_list[i]["name"], 
                 font=ctki.CTkFont(size=20, weight="bold"),
-                width=40, height=35, radiobutton_width=12, radiobutton_height=12, border_width_unchecked=2,
-                value=i, variable=self.radio_var, command=self.select_fav).grid(row=0, column=i, padx=3, pady=0, sticky="ew")
+                height=35, radiobutton_width=12, radiobutton_height=12, border_width_unchecked=2,
+                value=i, variable=self.radio_var, command=self.select_fav)
+            btn.grid(row=0, column=i, padx=3, pady=0, sticky="ew")
     
     def select_fav(self):
         print(f"Change to favorit list {self.radio_var.get()} with name={self.fav_list[self.radio_var.get()]['name']}")
@@ -361,14 +361,14 @@ class FrameVolume(ctki.CTkFrame):
         self.media_player = media_player
         self.my_config = config
 
-        #self.grid(row=3, column=0, padx=10, pady=10, sticky="esw")
+        self.grid(row=3, column=0, padx=0, pady=0, sticky="esw")
         self.grid_columnconfigure((0,1,2), weight=1)
         self.grid_rowconfigure(0, weight=1)
 
         # create mute button
-        self.btn_mute = ctki.CTkButton(master=self, text="mute", width=_station_btn_size, height=50, command=self.btn_mute,
+        self.btn_mute = ctki.CTkButton(master=self, text="mute", width=_station_btn_size, height=40, command=self.btn_mute,
                                        font=ctki.CTkFont(size=18, weight="bold"))
-        self.btn_mute.grid(row=0, column=0, padx=0, pady=0, sticky="w")
+        self.btn_mute.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         # create volume slider
         self.sl_volume = ctki.CTkSlider(master=self, from_=0, to=100, width=250, command=self.slider_event)
@@ -379,9 +379,9 @@ class FrameVolume(ctki.CTkFrame):
         self.media_player.audio_set_volume(self.my_config["last_volume"])
 
         # create stop button
-        self.btn_stop = ctki.CTkButton(master=self, text="stop", width=_station_btn_size, height=50, command=self.btn_stop,
+        self.btn_stop = ctki.CTkButton(master=self, text="stop", width=_station_btn_size, height=40, command=self.btn_stop,
                                        font=ctki.CTkFont(size=18, weight="bold"))
-        self.btn_stop.grid(row=0, column=3, padx=0, pady=0, sticky="e")
+        self.btn_stop.grid(row=0, column=3, padx=5, pady=5, sticky="e")
 
     def btn_mute(self):
         self.media_player.audio_set_volume(0)
@@ -467,7 +467,7 @@ class App(ctki.CTk):
 
     def check_for_screensaver(self):
         elapsed_time = time.time() - self.current_timestamp
-        print(f"Elapsed time (s) since last button pressed: {elapsed_time}")
+        #print(f"Elapsed time (s) since last button pressed: {elapsed_time}")
         if (elapsed_time > self.my_config["screensaver_after_s"]):
             self.show_screensaver()
         else:

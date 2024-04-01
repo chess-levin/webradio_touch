@@ -61,7 +61,7 @@ c:\programme\videolan\vlc\vlc-cache-gen.exe c:\programme\videolan\vlc\plugins\
 * [Create Icon](https://www.youtube.com/watch?v=aWg_9VZjf1c)
 * [Add Icon to Launcher](https://forums.raspberrypi.com/viewtopic.php?t=358648)
 * [Bookworm vs. Bullseye](https://github.com/thagrol/Guides/blob/main/bookworm.pdf)
-
+* [Assign Icon](https://www.youtube.com/watch?v=Y9_3DlFqc1Q)
 
 
 ### VLC

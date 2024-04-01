@@ -5,8 +5,38 @@
         "logo": "ffn80er.png"
     },
     {
+        "name": "ffn 90er",
+        "url": "https://player.ffn.de/ffn90er.mp3",
+        "logo": "ffn90er.png"
+    },
+    {
+        "name": "FluxFM 70er",
+        "url": "http://streams.fluxfm.de/70er/mp3-320/streams.fluxfm.de/",
+        "logo": "dummy.jpg"
+    },
+    {
+        "name": "FluxFM 60er",
+        "url": "http://streams.fluxfm.de/60er/mp3-320/streams.fluxfm.de/",
+        "logo": "dummy.jpg"
+    },    
+    {
         "name": "FluxFM 80er",
         "url": "http://streams.fluxfm.de/80er/mp3-320/streams.fluxfm.de/",
+        "logo": "dummy.jpg"
+    },
+    {
+        "name": "NRW 90er",
+        "url": "http://rnrw.cast.addradio.de/rnrw-0182/dein90er/low/stream.mp3",
+        "logo": "dummy.jpg"
+    },
+    {
+        "name": "8080s",
+        "url": "http://regiocast.streamabc.net/regc-80s80smweb2517500-mp3-192-1672667",
+        "logo": "dummy.jpg"
+    },
+    {
+        "name": "8080s-Live",
+        "url": "http://regiocast.streamabc.net/regc-80s80slivemusic6529239-mp3-192-4931649",
         "logo": "dummy.jpg"
     }
 ]
