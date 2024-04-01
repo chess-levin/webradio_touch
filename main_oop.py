@@ -66,6 +66,7 @@ class FrameScreensaverDigiClockContent(ctki.CTkFrame):
         
         self.brightness = _max_brightness
         self.conuter = -1
+        self.timer = 0
         self.la_clock = ctki.CTkLabel(master=self, text="HH:MM:SS", font=ctki.CTkFont(size=300, weight="normal"))
         self.la_clock.grid(row=0, column=0, sticky="news")
         self.grid_columnconfigure((0), weight=1)
@@ -88,10 +89,21 @@ class FrameScreensaverDigiClockContent(ctki.CTkFrame):
         return rgb2hex(self.brightness, self.brightness, self.brightness)
 
     def update_time(self):
-        current_time = time.strftime('%H:%M:%S')
         c = self.new_color()
         self.la_clock.configure(text_color = c)
-        self.la_clock.configure(text=current_time)
+
+        if self.timer < 5:
+            current_datetime = time.strftime('%H:%M:%S')
+            self.la_clock.configure(font=ctki.CTkFont(size=300, weight="normal"))
+        else:
+            current_datetime = time.strftime("%A,\n %B %d")
+            self.la_clock.configure(font=ctki.CTkFont(size=160, weight="normal") )
+
+        self.la_clock.configure(text=current_datetime)
+        self.timer += 1
+        if self.timer > 10:
+            self.timer = 0
+
         self.tid_update_time = self.after(1000, self.update_time)
 
     def grid(self):
