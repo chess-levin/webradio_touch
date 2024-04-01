@@ -1,7 +1,14 @@
 # VLC based webradio with lcd touch display
 
 
-![picture of my webradio](/docs/touch_lcd_radio.jpg "picture of my webradio")
+![picture of webradio touch](/docs/assets/touch_lcd_radio.jpg "picture of my webradio")
+
+I changed the project platform to a Rasberry Pi after experimenting with an [ESP32 based webradio](https://github.com/chess-levin/esp32webradio). The wifi streaming performance of the ESP32 (Arduino platform) is not as good as expected and it is not possible to use Wifi and Bluetooth in parallel. Another requirement is the radio should automatically connect to a paired Bluetoothspeaker. That works as a charm with the raspi os.
+
+My motivation for the new platform was to dive deeper into Python and GUI-development for touch displays. There is a [Python wrapper for VLC](https://pypi.org/project/python-vlc/), which does all the streaming in this project.
+
+I found [CustomTKinter](https://customtkinter.tomschimansky.com/) by Tom Schimansky and gave it try. It's a good looking and easy to use addition to [Tkinter](https://docs.python.org/3/library/tkinter.html).
+
 
 ## Parts
 
@@ -10,6 +17,7 @@
 * [WAVESHARE 7.9" DSI LCD & RPI 4B ENCLOSURE](https://cults3d.com/en/3d-model/gadget/waveshare-7-9-dsi-lcd-rpi-4b-enclosure)
 * Bluetooth Speaker
 
+
 ## Config
 
 Run `py3 main_oop.py kiosk` to start in fullscreen kiosk mode.
@@ -17,7 +25,7 @@ Run `py3 main_oop.py kiosk` to start in fullscreen kiosk mode.
 
 ## VLC
 
-In case there are errors like these on startup
+In case there are errors like these on startup of the python app
 
 ``` 
 [000002635638b9b0] main libvlc error: stale plugins cache: modified C:\Program Files\VideoLAN\VLC\plugins\access\libaccess_concat_plugin.dll
@@ -32,7 +40,7 @@ In case there are errors like these on startup
 [000002635638b9b0] main libvlc error: stale plugins cache: modified C:\Program Files\VideoLAN\VLC\plugins\access\libdshow_plugin.dll
 ```
 
-execute as admin
+execute the following command on an admin shell:
 
 ```
 c:\programme\videolan\vlc\vlc-cache-gen.exe c:\programme\videolan\vlc\plugins\
@@ -66,4 +74,14 @@ c:\programme\videolan\vlc\vlc-cache-gen.exe c:\programme\videolan\vlc\plugins\
 
 ### VLC
 
+* [VLC Module](https://www.geeksforgeeks.org/vlc-module-in-python-an-introduction/)
 * [Play Podcast in VLC](https://www.youtube.com/watch?v=5ztCJvfl9Aw)
+
+
+## Assembly
+
+![enclosure assembly](/docs/assets/enclosure_assembly_1.jpg  "enclosure assembly")
+![enclosure assembly](/docs/assets/enclosure_assembly_2.jpg  "enclosure assembly")
+![enclosure assembly](/docs/assets/enclosure_assembly_3.jpg  "enclosure assembly")
+![enclosure assembly](/docs/assets/enclosure_assembly_4.jpg  "enclosure assembly")
+![enclosure assembly](/docs/assets/enclosure_assembly_5.jpg  "enclosure assembly")
