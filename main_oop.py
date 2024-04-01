@@ -39,6 +39,17 @@ _check_for_screensaver_ms = 5000
 _min_brightness = 25
 _max_brightness = 200
 
+_str_stopped    = "Stopped"
+_str_no_info    = "no info"
+_str_mute       = "mute"
+_str_unmute     = "unmute"
+
+def state_by_bool(state):
+    if state:
+        return 'normal'
+    else:
+        return 'disabled'
+
 def rgb2hex(r, g, b):
     return '#{:02x}{:02x}{:02x}'.format(r, g, b)
 
@@ -160,7 +171,7 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
     
     def update_titel_info(self, station, title, logo):
         if (not self.media_player.is_playing()):
-            title = "Stopped"
+            title = _str_stopped
         
         self.la_logo.configure(image=self.logos[logo])
         self.la_name.configure(text=station)
@@ -188,10 +199,12 @@ class FrameRadioContent(ctki.CTkFrame):
 
         # configure grid layout
         self.fr_info = FrameInfo(self)
-        self.fr_stations = FrameStations(self, self.fr_info.update_media, func_update_titel_info, self.my_config, self.favorite_data, self.logos, self.media_player, self.vlc_instance, func_reset_timestamp)
-        self.fr_favs = FrameFavs(self, self.my_config, self.fr_stations)
         self.fr_volume = FrameVolume(self, self.my_config, self.media_player, self.fr_info)
-        
+        self.fr_stations = FrameStations(self, self.fr_info.update_media, func_update_titel_info, 
+                                         self.my_config, self.favorite_data, self.logos, self.media_player, self.vlc_instance, func_reset_timestamp,
+                                         self.fr_volume.change_is_playing)
+        self.fr_favs = FrameFavs(self, self.my_config, self.fr_stations)
+                
         self.fr_favs.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
         self.fr_stations.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
         self.fr_volume.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
@@ -208,7 +221,7 @@ class FrameInfo(ctki.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
 
         # create title-data label
-        self.la_title = ctki.CTkLabel(master=self, text="Stopped", fg_color="transparent", font=CTaFont())
+        self.la_title = ctki.CTkLabel(master=self, text=_str_stopped, fg_color="transparent", font=CTaFont())
         self.la_title.grid(row=0, column=0, sticky="w")
 
         # create date-time label
@@ -220,7 +233,12 @@ class FrameInfo(ctki.CTkFrame):
 
         self.update_datetime()
 
+    def update_media_stopped(self):
+        self.update_media(self.station_name, _str_stopped)
+
     def update_media(self, station_name, title):
+        self.station_name = station_name
+        self.title = title
         self.la_title.configure(text=f"{station_name}: {title}")
 
     def update_datetime(self):
@@ -259,7 +277,7 @@ class FrameFavs(ctki.CTkFrame):
 
 class FrameStations(ctki.CTkScrollableFrame):
                                
-    def __init__(self, master, func_update_meta_info, func_update_screensaver, config, favorite_data, logos, media_player, VlcInstance, func_reset_timestamp):
+    def __init__(self, master, func_update_meta_info, func_update_screensaver, config, favorite_data, logos, media_player, VlcInstance, func_reset_timestamp, func_change_is_playing):
         super().__init__(master, orientation='horizontal')
 
         self.config = config
@@ -268,7 +286,7 @@ class FrameStations(ctki.CTkScrollableFrame):
         self.media_player = media_player
         self.VlcInstance = VlcInstance
         self.func_reset_timestamp = func_reset_timestamp
-
+        self.func_change_is_playing = func_change_is_playing
         self.func_update_meta_info = func_update_meta_info
         self.func_update_screensaver = func_update_screensaver
 
@@ -330,12 +348,12 @@ class FrameStations(ctki.CTkScrollableFrame):
         self.func_reset_timestamp()
         self.select_station(i)
         self.media_player.play()
+        print(f"self.media_player.is_playing()={self.media_player.is_playing()}")
+        self.func_change_is_playing(True)
 
     # https://stackoverflow.com/questions/70509728/how-to-get-audiostream-metadata-using-vlc-py
     def update_meta(self):
         '''Update GUI meta data (e.g. title-info) that comes with the stream'''
-
-        # print (f"Is player playing? {self.media_player.is_playing()}")
 
         if self.Media is not None:
             meta = self.Media.get_meta(12) # vlc.Meta 12: 'NowPlaying',
@@ -343,7 +361,11 @@ class FrameStations(ctki.CTkScrollableFrame):
                 self.prev = meta
                 station_name = self.get_station_data()[self.now_playing_idx]["name"]
                 if meta is None:
-                    meta = "no info"
+                    meta = _str_no_info
+                
+                if not self.media_player.is_playing():
+                    meta = _str_stopped
+                    
                 print(f"Now playing {station_name}: {meta}")
                 self.func_update_meta_info(station_name, meta)
                 self.func_update_screensaver(station_name, meta, self.get_station_data()[self.now_playing_idx]["logo"])
@@ -354,22 +376,25 @@ class FrameStations(ctki.CTkScrollableFrame):
 
 class FrameVolume(ctki.CTkFrame):
 
-    def __init__(self, master, config, media_player, fr_head):
+    def __init__(self, master, config, media_player, fr_info):
         super().__init__(master)
 
-        self.fr_head = fr_head
+        self.fr_info = fr_info
         self.media_player = media_player
         self.my_config = config
+        self.is_muted = False
+        self.is_playing = False
 
         self.grid(row=3, column=0, padx=0, pady=0, sticky="esw")
         self.grid_columnconfigure((0,1,2), weight=1)
         self.grid_rowconfigure(0, weight=1)
 
         # create mute button
-        self.btn_mute = ctki.CTkButton(master=self, text="mute", width=_station_btn_size, height=40, command=self.btn_mute,
+        self.btn_mute = ctki.CTkButton(master=self, text=_str_mute, width=_station_btn_size, height=40, 
+                                       command=self.btn_mute, state='disabled',
                                        font=ctki.CTkFont(size=18, weight="bold"))
         self.btn_mute.grid(row=0, column=0, padx=5, pady=5, sticky="w")
-
+        
         # create volume slider
         self.sl_volume = ctki.CTkSlider(master=self, from_=0, to=100, width=250, command=self.slider_event)
         self.sl_volume.configure(number_of_steps=25)
@@ -379,18 +404,37 @@ class FrameVolume(ctki.CTkFrame):
         self.media_player.audio_set_volume(self.my_config["last_volume"])
 
         # create stop button
-        self.btn_stop = ctki.CTkButton(master=self, text="stop", width=_station_btn_size, height=40, command=self.btn_stop,
+        self.btn_stop = ctki.CTkButton(master=self, text="stop", width=_station_btn_size, height=40, 
+                                       command=self.btn_stop, state='disabled',
                                        font=ctki.CTkFont(size=18, weight="bold"))
         self.btn_stop.grid(row=0, column=3, padx=5, pady=5, sticky="e")
 
+    def change_is_playing(self, is_playing):
+        self.is_playing = is_playing
+        self.btn_mute.configure(state=state_by_bool(is_playing))
+        self.btn_stop.configure(state=state_by_bool(is_playing))
+
     def btn_mute(self):
-        self.media_player.audio_set_volume(0)
-        self.sl_volume.set(0)
+        print(f"self.is_playing()={self.is_playing}, self.is_muted()={self.is_muted}")
+        print(f"media_player.audio_get_volume()={self.media_player.audio_get_volume()}, media_player.is_playing()={self.media_player.is_playing()}")
+
+        if (self.is_muted):
+            self.media_player.audio_set_volume(self.my_config["last_volume"])
+            self.sl_volume.set(self.my_config["last_volume"])
+            self.btn_mute.configure(text=_str_mute)
+        else:
+            self.my_config["last_volume"] = self.media_player.audio_get_volume()
+            self.media_player.audio_set_volume(0)
+            self.sl_volume.set(0)
+            self.btn_mute.configure(text=_str_unmute)
+
+        self.is_muted = not self.is_muted
         self.master.master.reset_timestamp()
 
     def btn_stop(self):
         self.media_player.stop()
-        self.fr_head.update_media("", "Stopped")
+        self.change_is_playing(False)
+        self.fr_info.update_media_stopped()
         self.master.master.reset_timestamp()
         
     def slider_event(self, value):
@@ -500,7 +544,7 @@ class App(ctki.CTk):
             self.logos[os.path.basename(filename)] = ctki.CTkImage(img, size=(_logo_size, _logo_size))
             print(f"added new logo 'f{os.path.basename(filename)}'")
 
-        print(f"loaded {len(self.logos)}")
+        print(f"Loaded {len(self.logos)} logos")
 
     def load_favorites(self):
         '''load favorit files'''
