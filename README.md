@@ -29,6 +29,10 @@ I found [CustomTKinter](https://customtkinter.tomschimansky.com/) by Tom Schiman
 
 Run `py3 main_oop.py kiosk` to start in fullscreen kiosk mode.
 
+## Python
+
+Show installed packages: `pip list`
+
 
 ## VLC
 
@@ -59,6 +63,7 @@ c:\programme\videolan\vlc\vlc-cache-gen.exe c:\programme\videolan\vlc\plugins\
 ### Python
 
 * [pip requirements](https://learnpython.com/blog/python-requirements-file/)
+* [Call function every x seconds](https://pythonassets.com/posts/executing-code-every-certain-time/)
 
 ### Waveshare Touch LCD 
 * https://www.youtube.com/watch?v=mVA42vosU3w

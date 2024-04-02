@@ -2,6 +2,7 @@ import customtkinter as ctki
 import tkinter as tk 
 from PIL import Image
 from functools import partial
+from threading import Timer
 import vlc
 import json
 import time
@@ -35,7 +36,7 @@ _station_btn_size       = 190
 _logo_size              = _station_btn_size - 40
 
 _check_for_screensaver_ms = 5000
-_check_config_is_dirty_ms = 3000
+_check_config_is_dirty_s = 4
 
 _min_brightness = 25
 _max_brightness = 200
@@ -64,6 +65,97 @@ class CTaFont(ctki.CTkFont):
 
     def __init__(self):
         super().__init__(size=20, weight="normal")
+
+
+# --- Helper Classes
+        
+class Interval(object):
+
+    def __init__(self, interval, function, args=[], kwargs={}):
+        """
+        Runs the function at a specified interval with given arguments.
+        """
+        self.interval = interval
+        self.function = partial(function, *args, **kwargs)
+        self.running  = False 
+        self._timer   = None 
+
+    def __call__(self):
+        """
+        Handler function for calling the partial and continuting. 
+        """
+        self.running = False  # mark not running
+        self.start()          # reset the timer for the next go 
+        self.function()       # call the partial function 
+
+    def start(self):
+        """
+        Starts the interval and lets it run. 
+        """
+        if self.running:
+            # Don't start if we're running! 
+            return 
+            
+        # Create the timer object, start and set state. 
+        self._timer = Timer(self.interval, self)
+        self._timer.start() 
+        self.running = True
+
+    def stop(self):
+        """
+        Cancel the interval (no more function calls).
+        """
+        if self._timer:
+            self._timer.cancel() 
+        self.running = False 
+        self._timer  = None
+       
+
+class MyConfig:
+
+    is_dirty = False
+
+    def __init__(self, check_interval_s):
+        self.load_config()
+        self.check_is_dirty_timer = Interval(check_interval_s, self.save_if_dirty)
+
+        if self.get("auto_save_config"):
+            self.start_is_dirty_check()
+            print("Config autosave started")
+        else:
+            print("Config autosave auto_save_config is false")
+
+    def get(self, key):
+        return self.my_config[key]
+
+    def change(self, key, new_value):
+        self.my_config[key] = new_value
+        self.is_dirty = True
+
+    def start_is_dirty_check(self):
+        self.check_is_dirty_timer.start()
+       
+    def stop_is_dirty_check(self):
+        self.check_is_dirty_timer.stop()
+
+    def save_if_dirty(self):
+        if self.is_dirty:
+            self.save_config()
+
+    def load_config(self):
+        '''read config from JSON file'''
+
+        with open(_config_json_path) as json_file:
+            self.my_config = json.load(json_file)
+        
+        # Print the type of data variable
+        print(f"Loaded config {self.my_config} from {_config_json_path}")
+
+    def save_config(self):
+        with open(_config_json_path, "w") as outfile: 
+            json.dump(self.my_config, outfile, indent=8)
+        print(f"Config saved to {_config_json_path}")
+        self.is_dirty = False
 
 
 # ---- Screensaver classes
@@ -207,10 +299,10 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
 
 class FrameRadioContent(ctki.CTkFrame):
 
-    def __init__(self, parent, config, vlc_instance, media_player, logos, favorite_data, func_update_titel_info, func_reset_timestamp ):
+    def __init__(self, parent, my_config, vlc_instance, media_player, logos, favorite_data, func_update_titel_info, func_reset_timestamp ):
         super().__init__(parent)
 
-        self.my_config = config
+        self.my_config = my_config
         self.vlc_instance = vlc_instance
         self.media_player = media_player
         self.logos = logos
@@ -274,15 +366,13 @@ class FrameInfo(ctki.CTkFrame):
 
 class FrameFavs(ctki.CTkFrame):
 
-    def __init__(self, parent, config, fr_stations):
+    def __init__(self, parent, my_config, fr_stations):
         super().__init__(parent)
 
-        self.my_config = config
-        self.fav_list = config["favorites"]
-        self.radio_var = ctki.IntVar(value=config["last_favlist"])
+        self.my_config = my_config
+        self.fav_list = my_config.get("favorites")
+        self.radio_var = ctki.IntVar(value=my_config.get("last_favlist"))
         self.fr_stations = fr_stations
-
-        #self.grid(row=0, column=0, padx=10, pady=10, sticky="new")
 
         # create fav buttons
         for i in range(len(self.fav_list)):
@@ -297,18 +387,15 @@ class FrameFavs(ctki.CTkFrame):
         print(f"Change to favorit list {self.radio_var.get()} with name={self.fav_list[self.radio_var.get()]['name']}")
         self.master.master.reset_timestamp()
         self.fr_stations.change_station_data(self.radio_var.get())
-        self.my_config["last_favlist"] = self.radio_var.get()
-        global _config_is_dirty
-        _config_is_dirty = True
         
    
 
 class FrameStations(ctki.CTkScrollableFrame):
                                
-    def __init__(self, parent, func_update_meta_info, func_update_screensaver, config, favorite_data, logos, media_player, VlcInstance, func_reset_timestamp, func_change_is_playing):
+    def __init__(self, parent, func_update_meta_info, func_update_screensaver, my_config, favorite_data, logos, media_player, VlcInstance, func_reset_timestamp, func_change_is_playing):
         super().__init__(parent, orientation='horizontal')
 
-        self.my_config = config
+        self.my_config = my_config
         self.favorite_data = favorite_data
         self.logos = logos
         self.media_player = media_player
@@ -318,8 +405,8 @@ class FrameStations(ctki.CTkScrollableFrame):
         self.func_update_meta_info = func_update_meta_info
         self.func_update_screensaver = func_update_screensaver
 
-        self.now_playing_idx = self.my_config["last_station"]
-        self.active_fav_list_idx = self.my_config["last_favlist"]
+        self.now_playing_idx = self.my_config.get("last_station")
+        self.active_fav_list_idx = self.my_config.get("last_favlist")
 
         self.Media = None
 
@@ -335,8 +422,8 @@ class FrameStations(ctki.CTkScrollableFrame):
         self.select_station(self.now_playing_idx)
         self.update_meta()
 
-    def change_station_data(self, i):
-        self.active_fav_list_idx = i
+    def change_station_data(self, new_favorites_list_idx):
+        self.active_fav_list_idx = new_favorites_list_idx
         for btn_station_slot in self.btn_station_slot:
             btn_station_slot.destroy()
 
@@ -371,9 +458,8 @@ class FrameStations(ctki.CTkScrollableFrame):
             self.media_player.set_media(self.Media)
             self.now_playing_idx = station_idx
             self.prev = ""
-            self.my_config["last_station"] = self.now_playing_idx
-            global _config_is_dirty
-            _config_is_dirty = True
+            self.my_config.change("last_station", self.now_playing_idx)
+            self.my_config.change("last_favlist", self.active_fav_list_idx)
 
     def btn_play_station(self, i):
         self.func_reset_timestamp()
@@ -407,12 +493,12 @@ class FrameStations(ctki.CTkScrollableFrame):
 
 class FrameVolume(ctki.CTkFrame):
 
-    def __init__(self, parent, config, media_player, fr_info):
+    def __init__(self, parent, my_config, media_player, fr_info):
         super().__init__(parent)
 
         self.fr_info = fr_info
         self.media_player = media_player
-        self.my_config = config
+        self.my_config = my_config
         self.is_muted = False
         self.is_playing = False
 
@@ -429,10 +515,10 @@ class FrameVolume(ctki.CTkFrame):
         # create volume slider
         self.sl_volume = ctki.CTkSlider(master=self, from_=0, to=100, width=250, command=self.slider_event)
         self.sl_volume.configure(number_of_steps=25)
-        self.sl_volume.set(self.my_config["last_volume"])
+        self.sl_volume.set(self.my_config.get("last_volume"))
         self.sl_volume.grid(row=0, column=1, padx=0, pady=0, sticky="ew")
         
-        self.media_player.audio_set_volume(self.my_config["last_volume"])
+        self.media_player.audio_set_volume(self.my_config.get("last_volume"))
 
         # create stop button
         self.btn_play_stop = ctki.CTkButton(master=self, text=_str_play, width=_station_btn_size, height=40, 
@@ -454,11 +540,11 @@ class FrameVolume(ctki.CTkFrame):
         print(f"media_player.audio_get_volume()={self.media_player.audio_get_volume()}, media_player.is_playing()={self.media_player.is_playing()}")
 
         if (self.is_muted):
-            self.media_player.audio_set_volume(self.my_config["last_volume"])
-            self.sl_volume.set(self.my_config["last_volume"])
+            self.media_player.audio_set_volume(self.my_config.get("last_volume"))
+            self.sl_volume.set(self.my_config.get("last_volume"))
             self.btn_mute.configure(text=_str_mute)
         else:
-            self.my_config["last_volume"] = self.media_player.audio_get_volume()
+            self.my_config.change("last_volume", self.media_player.audio_get_volume())
             self.media_player.audio_set_volume(0)
             self.sl_volume.set(0)
             self.btn_mute.configure(text=_str_unmute)
@@ -480,9 +566,7 @@ class FrameVolume(ctki.CTkFrame):
     def slider_event(self, value):
         self.media_player.audio_set_volume(int(value))
         self.master.master.reset_timestamp()
-        self.my_config["last_volume"] = int(value)
-        global _config_is_dirty
-        _config_is_dirty = True
+        self.my_config.change("last_volume", int(value))
 
 
 # ---- App Class ------
@@ -509,7 +593,8 @@ class App(ctki.CTk):
         self.favorite_data = []
         self.logos = {}
 
-        self.load_config()
+        self.my_config = MyConfig(_check_config_is_dirty_s)
+
         self.load_station_logos()
         self.load_favorites()
 
@@ -528,18 +613,6 @@ class App(ctki.CTk):
         self.reset_timestamp()
         self.check_for_screensaver()
 
-        if self.my_config["auto_save_config"]:
-            self.tid_save_config = self.after(_check_config_is_dirty_ms, self.save_config)
-
-    def save_config(self):
-        global _config_is_dirty
-        if (_config_is_dirty):
-            with open(_config_json_path, "w") as outfile: 
-                json.dump(self.my_config, outfile, indent=8)
-            print(f"Config saved to {_config_json_path}")
-            _config_is_dirty = False
-
-        self.tid_save_config = self.after(_check_config_is_dirty_ms, self.save_config)
 
     def set_icon(self):
         self.iconpath = tk.PhotoImage(file=os.path.join("", _icon_path))
@@ -569,19 +642,10 @@ class App(ctki.CTk):
     def check_for_screensaver(self):
         elapsed_time = time.time() - self.current_timestamp
         #print(f"Elapsed time (s) since last button pressed: {elapsed_time}")
-        if (elapsed_time > self.my_config["screensaver_after_s"]):
+        if (elapsed_time > self.my_config.get("screensaver_after_s")):
             self.show_screensaver()
         else:
             self.tid_check_for_screensaver = self.after(_check_for_screensaver_ms, self.check_for_screensaver)
-
-    def load_config(self):
-        '''read config from JSON file'''
-        with open(_config_json_path) as json_file:
-            self.my_config = json.load(json_file)
-        
-        # Print the type of data variable
-        print(f"Loaded config {self.my_config} from {_config_json_path}")
-        
 
     def load_station_logos(self):
         '''load station logos'''
@@ -603,7 +667,7 @@ class App(ctki.CTk):
 
     def load_favorites(self):
         '''load favorit files'''
-        for fav_fn in self.my_config["favorites"]:
+        for fav_fn in self.my_config.get("favorites"):
             fav_path = os.path.join(_favorites_path, fav_fn["file"])
             print(f'Try to load favorite file {fav_path}')
 
