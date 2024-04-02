@@ -18,21 +18,21 @@ ctki.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green",
 _win_width  = 1280
 _win_height = 400
 
-_icon_path          = "radio_icon.png"
-_config_json_path   = "config.json"
-_favorites_path     = "favorites"
-_stations_logos_path = "logos"
-_stations_logos_glob = os.path.join(_stations_logos_path, "*.??g")
-_dummy_logo_fn         = "dummy.jpg"
+_icon_path              = "radio_icon.png"
+_config_json_path       = "config.json"
+_favorites_path         = "favorites"
+_stations_logos_path    = "logos"
+_stations_logos_glob    = os.path.join(_stations_logos_path, "*.??g")
+_dummy_logo_fn          = "dummy.jpg"
 _station_default_logo_path = os.path.join(_stations_logos_path, _dummy_logo_fn)
-_station_empty_logo_fn = "empty.png"
+_station_empty_logo_fn  = "empty.png"
 
-_station_empty = "empty"
+_station_empty          = "empty"
 
-_screensaver_jump_ms = 15000
+_screensaver_jump_ms    = 15000
 
-_station_btn_size = 190
-_logo_size        = _station_btn_size - 40
+_station_btn_size       = 190
+_logo_size              = _station_btn_size - 40
 
 _check_for_screensaver_ms = 5000
 _check_config_is_dirty_ms = 3000
@@ -40,12 +40,16 @@ _check_config_is_dirty_ms = 3000
 _min_brightness = 25
 _max_brightness = 200
 
+_str_stop       = "stop"
+_str_play       = "play"
 _str_stopped    = "Stopped"
 _str_no_info    = "no info"
 _str_mute       = "mute"
 _str_unmute     = "unmute"
 
 _config_is_dirty   = False
+
+# --- Helper Functions --------
 
 def state_by_bool(state):
     if state:
@@ -60,6 +64,10 @@ class CTaFont(ctki.CTkFont):
 
     def __init__(self):
         super().__init__(size=20, weight="normal")
+
+
+# ---- Screensaver classes
+
 
 class FrameScreensaverDigiClockContent(ctki.CTkFrame):
 
@@ -194,6 +202,8 @@ class FrameScreensaverPlayingContent(ctki.CTkFrame):
         self.la_dtime.configure(text=time.asctime())
         self.tid_update_datetime = self.after(ms=1000, func=self.update_datetime) 
 
+
+# --- Radio Frame Classes
 
 class FrameRadioContent(ctki.CTkFrame):
 
@@ -425,15 +435,19 @@ class FrameVolume(ctki.CTkFrame):
         self.media_player.audio_set_volume(self.my_config["last_volume"])
 
         # create stop button
-        self.btn_stop = ctki.CTkButton(master=self, text="stop", width=_station_btn_size, height=40, 
-                                       command=self.btn_stop, state='disabled',
+        self.btn_play_stop = ctki.CTkButton(master=self, text=_str_play, width=_station_btn_size, height=40, 
+                                       command=self.btn_play_stop,
                                        font=ctki.CTkFont(size=18, weight="bold"))
-        self.btn_stop.grid(row=0, column=3, padx=5, pady=5, sticky="e")
+        self.btn_play_stop.grid(row=0, column=3, padx=5, pady=5, sticky="e")
 
     def change_is_playing(self, is_playing):
         self.is_playing = is_playing
         self.btn_mute.configure(state=state_by_bool(is_playing))
-        self.btn_stop.configure(state=state_by_bool(is_playing))
+        #self.btn_play_stop.configure(state=state_by_bool(is_playing))
+        if (is_playing):
+            self.btn_play_stop.configure(text=_str_stop)
+        else:
+            self.btn_play_stop.configure(text=_str_play )
 
     def btn_mute(self):
         print(f"self.is_playing()={self.is_playing}, self.is_muted()={self.is_muted}")
@@ -452,10 +466,15 @@ class FrameVolume(ctki.CTkFrame):
         self.is_muted = not self.is_muted
         self.master.master.reset_timestamp()
 
-    def btn_stop(self):
-        self.media_player.stop()
-        self.change_is_playing(False)
-        self.fr_info.update_media_stopped()
+    def btn_play_stop(self):
+        if self.media_player.is_playing():
+            self.media_player.stop()
+            self.change_is_playing(False)
+            self.fr_info.update_media_stopped()
+        else:
+            self.media_player.play()
+            self.change_is_playing(True)
+
         self.master.master.reset_timestamp()
         
     def slider_event(self, value):
@@ -466,6 +485,7 @@ class FrameVolume(ctki.CTkFrame):
         _config_is_dirty = True
 
 
+# ---- App Class ------
 
 class App(ctki.CTk):
     
@@ -534,7 +554,7 @@ class App(ctki.CTk):
         self.tid_check_for_screensaver = self.after(_check_for_screensaver_ms, self.check_for_screensaver)
 
     def show_screensaver(self):
-        print("Start Screensaver!")
+        print("Start Screensaver")
         self.content_frames[2].grid_forget()
         self.after_cancel(self.tid_check_for_screensaver)
 
