@@ -48,8 +48,6 @@ _str_no_info    = "no info"
 _str_mute       = "mute"
 _str_unmute     = "unmute"
 
-_config_is_dirty   = False
-
 # --- Helper Functions --------
 
 def state_by_bool(state):
@@ -337,12 +335,12 @@ class FrameInfo(ctki.CTkFrame):
         #self.grid(row=2, column=0, padx=10, pady=10, sticky="new")
         self.grid_columnconfigure(0, weight=1)
 
-        # create title-data label
-        self.la_title = ctki.CTkLabel(master=self, text=_str_stopped, fg_color="transparent", font=CTaFont())
+        # create station-title-meta-data label
+        self.la_title = ctki.CTkLabel(master=self, text=_str_stopped, fg_color="transparent", font= ctki.CTkFont(size=20, weight="bold"))
         self.la_title.grid(row=0, column=0, sticky="w")
 
         # create date-time label
-        self.la_datetime = ctki.CTkLabel(master=self, text="Datetime", fg_color="transparent", font=CTaFont())
+        self.la_datetime = ctki.CTkLabel(master=self, text="Datetime", fg_color="transparent", font= ctki.CTkFont(size=20, weight="bold"))
         self.la_datetime.grid(row=0, column=1)
 
         self.grid_columnconfigure(0, weight=1)
@@ -565,6 +563,8 @@ class FrameVolume(ctki.CTkFrame):
         
     def slider_event(self, value):
         self.media_player.audio_set_volume(int(value))
+        if ((int(value) > 0)):
+            self.btn_mute.configure(text=_str_mute)
         self.master.master.reset_timestamp()
         self.my_config.change("last_volume", int(value))
 
