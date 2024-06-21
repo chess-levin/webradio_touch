@@ -5,8 +5,8 @@
 
 version: 2
 updates:
-- package-ecosystem: "pip"
-    directory: "/python/helpers"
+  - package-ecosystem: "pip"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "sunday"
