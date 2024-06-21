@@ -5,11 +5,13 @@
 
 version: 2
 updates:
-- package-ecosystem: pip
-  directory: "/"
-  schedule:
-    interval: daily
-  groups:
-    python-packages:
-      patterns:
-        - "*"
+- package-ecosystem: "pip"
+    directory: "/python/helpers"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      common:
+        patterns:
+          - pip
