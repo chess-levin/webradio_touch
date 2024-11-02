@@ -10,9 +10,14 @@
         "logo": "dummy.jpg"
     },
     {
-        "name": "KCWR",
-        "url": "http://kcrw.streamguys1.com/kcrw_192k_mp3_on_air",
-        "logo": "dummy.jpg"
+        "name": "KCRW Live",
+        "url": "https://streams.kcrw.com/kcrw_mp3?aw_0_1st.playerid=KCRW_Website",
+        "logo": "kcrw.png"
+    },
+    {
+        "name": "KCRW ECLECTIC24",
+        "url": "https://streams.kcrw.com/e24_mp3?aw_0_1st.playerid=KCRW_Website",
+        "logo": "kcrw_e24.png"
     },
     {
         "name": "Cork FM",
