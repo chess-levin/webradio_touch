@@ -75,6 +75,7 @@ c:\programme\videolan\vlc\vlc-cache-gen.exe c:\programme\videolan\vlc\plugins\
 * [Switch Frames](https://www.geeksforgeeks.org/tkinter-application-to-switch-between-different-page-frames/)
 * [MVC with Tkinter](https://nazmul-ahsan.medium.com/how-to-organize-multi-frame-tkinter-application-with-mvc-pattern-79247efbb02b)
 * [Professional GUI with TKinter inkl. Switch frames](https://medium.com/@mohit444123/sleek-and-professional-gui-with-tkinter-a-step-by-step-guide-4e9f82486380)
+* [Using images in tkinter](https://www.youtube.com/watch?v=VnwDPa9biwc)
 
 ### Rasberry Pi
 * [Shortcuts](https://raspberrytips.com/desktop-shortcuts-on-raspberry-pi/)
@@ -82,6 +83,9 @@ c:\programme\videolan\vlc\vlc-cache-gen.exe c:\programme\videolan\vlc\plugins\
 * [Add Icon to Launcher](https://forums.raspberrypi.com/viewtopic.php?t=358648)
 * [Bookworm vs. Bullseye](https://github.com/thagrol/Guides/blob/main/bookworm.pdf)
 * [Assign Icon](https://www.youtube.com/watch?v=Y9_3DlFqc1Q)
+* [GPIO](https://hackaday.com/2022/02/01/did-you-know-that-the-raspberry-pi-4-has-more-spi-i2c-uart-ports/#:~:text=We've%20gotten%20used%20to,on%20its%2040%2Dpin%20header.)
+* [Raspberry Pi Power Switch Button - Safe Shutdown / Start Up](https://www.youtube.com/watch?v=WrPbVWwCOqc)
+* [1/0 Switch](https://blog.gc2.at/post/pi-herunterfahren/)
 
 
 ### VLC

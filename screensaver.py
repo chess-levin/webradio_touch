@@ -1,36 +1,127 @@
 import os
+import random
 
 import customtkinter as ctk
-from PIL import Image
+from PIL import Image, ImageTk
 from screeninfo import get_monitors
 import platform
 import sys
 import time
 
-_screen_size = (1280, 400)
+_kiosk_screen_size = (1280, 400)
 
 _image_path = "gallery/private/"
-_images = ["20220809_144810.jpg", "20230818_121739.jpg"]
+_images = ["20220809_144810.jpg", "20230818_121739.jpg", "20230910_165329-01.jpg"]
 _img_timeout_ms = 5000
+
+import psutil
+
+# Get the current process
+process = psutil.Process()
+
+
+class ImageCanvasFrame(ctk.CTkCanvas):
+    def __init__(self, master, *args, **kwargs):
+        super().__init__(master, *args, **kwargs)
+        self.original_image = None
+        self.font = ctk.CTkFont(size=45, weight="bold")
+        self.img_no = 0
+        self.photo_image = None
+        self.datetime_text = None
+        self.dia_image = None
+        self.text_positions = ['sw', 'se', 'nw', 'ne', 'center']
+        self.current_text_pos = 'sw'
+        self.bind("<Configure>", self.resize_canvas)
+        self.next_image()
+        self.next_tick()
+
+    def resize_canvas(self, event=None):
+        wininfo_width = self.winfo_width()
+        wininfo_height = self.winfo_height()
+        print(f"resize_canvas(): wininfo_width x wininfo_height {wininfo_width}x{wininfo_height}")
+        resized_image = self.original_image.resize((wininfo_width, wininfo_height), Image.Resampling.LANCZOS)
+        self.photo_image = ImageTk.PhotoImage(resized_image)
+        self.dia_image = self.create_image(0, 0, anchor="nw", image=self.photo_image)
+        self.show_datetime()
+
+    def load_image(self, image_name):
+        self.original_image = Image.open(os.path.join(_image_path, _images[self.img_no]))
+        self.resize_canvas()
+
+    def next_image(self):
+        self.datetime_text = None
+        self.load_image(_images[self.img_no])
+        self.current_text_pos = self.text_positions[random.randint(0, len(self.text_positions)-1)]
+
+        self.img_no += 1
+        if self.img_no >= len(_images):
+            self.img_no = 0
+
+        self.after(_img_timeout_ms, self.next_image)
+
+    def show_datetime(self):
+        time_string = time.strftime('%A, %d. %B %H:%M:%S')
+
+        if self.datetime_text:
+            self.itemconfig(self.datetime_text, text=time_string)
+        else:
+            wininfo_width = self.winfo_width()
+            wininfo_height = self.winfo_height()
+            print(f"show_datetime(): wininfo_width x wininfo_height {wininfo_width}x{wininfo_height}")
+
+            if self.current_text_pos == 'se':
+                ref_point = (wininfo_width - 10, wininfo_height)
+            elif self.current_text_pos == 'sw':
+                ref_point = (10, wininfo_height)
+            elif self.current_text_pos == 'nw':
+                ref_point = (10, 10)
+            elif self.current_text_pos == 'ne':
+                ref_point = (wininfo_width - 10, 10)
+            else:
+                ref_point = (wininfo_width / 2, wininfo_height / 2)
+
+            self.datetime_text = self.create_text(ref_point , text=time_string, font=self.font,  fill="white", anchor=self.current_text_pos)
+
+    def next_tick(self):
+        self.show_datetime()
+
+        #memory_usage = process.memory_info().rss
+        # Convert to megabytes
+        #memory_usage_mb = memory_usage / (1024 * 1024)
+        #print(f"Memory usage: {memory_usage_mb:.2f} MB")
+
+        self.after(1000, self.next_tick)
+
 
 class ImageFrame(ctk.CTkFrame):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.img_no = 0
+
+        self.ctk_image = ctk.CTkImage(light_image=self.load_image(_images[self.img_no]), size=_kiosk_screen_size)
+        self.label = ctk.CTkLabel(self, image=self.ctk_image, text="", font=ctk.CTkFont(size=100, weight="normal"),
+                                  anchor="sw")
+        self.label.grid(row=0, column=0, sticky="news")
+
+        self.time_label = ctk.CTkLabel(self, text="HH:MM:SS", fg_color="transparent", font=ctk.CTkFont(size=75, weight="normal"))
+        self.time_label.place(relx=0.5, rely=1.0, anchor="s")  # Adjust relx and rely for positioning
+
+        #self.text_label.place(relx=0.0, rely=0.0, anchor="nw") for top left.
+        #self.text_label.place(relx=1.0, rely=0.0, anchor="ne") for top right.
+        #self.text_label.place(relx=0.0, rely=1.0, anchor="sw") for bottom left.
+        #self.text_label.place(relx=1.0, rely=1.0, anchor="se") for bottom right.
+
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.ctk_image = ctk.CTkImage(light_image=self.load_image(_images[self.img_no]), size=_screen_size)
-        self.label = ctk.CTkLabel(self, image=self.ctk_image, text="")
-        self.label.grid(row=0, column=0, sticky="news")
-
+        self.next_tick()
         self.next_image()
 
     def load_image(self, image_name ):
         return Image.open(os.path.join(_image_path, image_name))
 
     def set_image(self, image_name):
-        self.ctk_image = ctk.CTkImage(light_image=self.load_image(image_name), size=_screen_size)
+        self.ctk_image = ctk.CTkImage(light_image=self.load_image(image_name), size=_kiosk_screen_size)
         self.label.configure(image=self.ctk_image)
 
     def next_image(self):
@@ -41,6 +132,12 @@ class ImageFrame(ctk.CTkFrame):
             self.img_no = 0
 
         self.after(_img_timeout_ms, self.next_image)
+
+    def next_tick(self):
+        time_string = time.strftime('%H:%M:%S')
+        #self.label.configure(anchor="ne")
+        self.time_label.configure(text=time_string)
+        self.after(1000, self.next_tick)
 
 class RadioFrame(ctk.CTkFrame):
     def __init__(self, master, *args, **kwargs):
@@ -58,28 +155,28 @@ class App(ctk.CTk):
         super().__init__()
 
         self.kiosk_mode = kiosk_mode
+        self.is_screensaver_on = False
         self.attributes("-fullscreen", kiosk_mode) # run fullscreen
         self.wm_attributes("-topmost", kiosk_mode) # keep on top
 
         self.last_activity_time = time.time()
         self.inactivity_period_s = 5  # in seconds
         self.title("Screensaver")
-        self.geometry(f"{_screen_size[0]}x{_screen_size[1]}" )
+        self.geometry(f"{_kiosk_screen_size[0]}x{_kiosk_screen_size[1]}")
 
         print(f"App Window Size start ({self.winfo_width()}, {self.winfo_height()})")
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.image_frame = ImageFrame(self, width=_screen_size[0], height=_screen_size[1])
+        self.image_frame = ImageCanvasFrame(self, width=_kiosk_screen_size[0], height=_kiosk_screen_size[1])
         self.image_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
         self.image_frame.grid_remove()
 
         self.update_size()
 
-        self.radio_frame = RadioFrame(self, width=_screen_size[0], height=_screen_size[1])
+        self.radio_frame = RadioFrame(self, width=_kiosk_screen_size[0], height=_kiosk_screen_size[1])
         self.radio_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
-
 
         self.bind("<Escape>", self.on_escape)
         self.bind("<Configure>", self.update_size)
@@ -91,6 +188,7 @@ class App(ctk.CTk):
 
     def reset_timer(self, event=None):
         self.last_activity_time = time.time()
+        self.is_screensaver_on = False
         self.image_frame.grid_remove()
         self.radio_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
 
@@ -101,14 +199,16 @@ class App(ctk.CTk):
         self.after(1000, self.check_inactivity)
 
     def on_inactivity(self):
-        print(f"No activity within the last period of {self.inactivity_period_s} seconds, switching to screensaver mode")
-        self.radio_frame.grid_remove()
-        self.image_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
+        if not self.is_screensaver_on:
+            print(f"No activity within the last period of {self.inactivity_period_s} seconds, switching to screensaver mode")
+            self.radio_frame.grid_remove()
+            self.image_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
+            self.is_screensaver_on = True
 
     def update_size(self, event=None):
         width = self.winfo_width()
         height = self.winfo_height()
-        print(f"Windowsize: {width}x{height}")
+        #print(f"Windowsize: {width}x{height}")
 
     def on_escape(self, event=None):
         app.destroy()
@@ -129,7 +229,7 @@ print(f"Running Env {platform.system()}")
 print("_kiosk_mode=",_kiosk_mode)
 
 if __name__ == "__main__":
-    try:
+#    try:
         monitor = get_monitors()
 
         print(f"Monitor List: {monitor}")
@@ -142,6 +242,6 @@ if __name__ == "__main__":
 
         app.mainloop()
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        input("Press Enter to exit...")
+#    except Exception as e:
+#        print(f"An error occurred: {e}")
+#        input("Press Enter to exit...")
