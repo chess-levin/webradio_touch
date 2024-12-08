@@ -129,6 +129,11 @@ class FrameStations(ctk.CTkScrollableFrame):
     def setup_station_slots(self, favlist_name):
         """create station slot buttons"""
 
+        for btn_station_slot in self.btn_station_slot:
+            btn_station_slot.destroy()
+
+        self.btn_station_slot = []
+
         for i, station in enumerate(self.controller.config.favorites_dict[favlist_name].stations):
             logo_fn = station.logo
             logo_img = self.controller.logos.get_image_as_ctk(logo_fn, _logo_size)
@@ -181,7 +186,7 @@ class FrameFavs(ctk.CTkFrame):
 
     def select_fav(self):
         new_favlist_name = self.favorite_btns[self.radio_var.get()].cget('text')
-        print(f"Click on favorite list item {self.radio_var.get()}, {new_favlist_name}")
+        print(f"Click on favorite list item {self.radio_var.get()} '{new_favlist_name}'")
         self.controller.change_to_favlist(new_favlist_name)
         #self.master.master.reset_timestamp()
 
@@ -197,19 +202,16 @@ class FrameVolume(ctk.CTkFrame):
         self.grid_columnconfigure((0,1,2), weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        # create mute button
         self.btn_mute = ctk.CTkButton(master=self, text=_str_mute, width=_station_btn_size, height=40,
                                        command=self.btn_mute_cb, state='disabled',
                                        font=ctk.CTkFont(size=18, weight="bold"))
         self.btn_mute.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-        # create volume slider
         self.sl_volume = (ctk.CTkSlider(master=self, from_=0, to=100, width=250, command=self.volume_slider_event_cb))
         self.sl_volume.configure(number_of_steps=25)
         self.sl_volume.set(self.controller.config.last_volume)
         self.sl_volume.grid(row=0, column=1, padx=0, pady=0, sticky="ew")
 
-        # create stop button
         self.btn_play_stop = ctk.CTkButton(master=self, text=_str_play, width=_station_btn_size, height=40,
                                             command=self.btn_play_stop_cb, font=ctk.CTkFont(size=18, weight="bold"))
         self.btn_play_stop.grid(row=0, column=3, padx=5, pady=5, sticky="e")
@@ -272,10 +274,10 @@ class FrameInfo(ctk.CTkFrame):
     def playing(self):
         self.update_media(self.station_name, _str_no_info)
 
-    def update_media(self, station_name, title):
-        self.station_name = station_name
-        self.title = title
-        self.la_title.configure(text=f"{station_name}: {title}")
+    def update_media(self, new_station_name, new_title):
+        self.station_name = new_station_name
+        self.title = new_title
+        self.la_title.configure(text=f"{new_station_name}: {new_title}")
 
     def update_datetime(self):
         self.datetime_tid = self.la_datetime.configure(text=time.asctime())
@@ -294,7 +296,6 @@ class Controller:
         self.config = config
         self.logos = LogoDist(img_ext=_img_ext, directory=_stations_logos_path, default_logo_name=_dummy_logo_fn)
         self.config = config
-        print(self.config.get_all_stations_dict())
 
         self.vlc_instance = vlc.Instance()
         self.media_player = self.vlc_instance.media_player_new()
@@ -302,7 +303,8 @@ class Controller:
         self.is_muted = False
         self.is_playing = False
         self.prev = ""
-        self.current_station_idx = self.config.last_station
+        self.current_station_idx = self.config.last_station                 #TODO get rid of idx
+        self.current_station_name = self.config.last_station_name
         self.current_favlist_name = self.config.last_favlist_name
 
         self.update_timer = Interval(_update_meta_info_s, self.update_meta_info)
@@ -318,7 +320,7 @@ class Controller:
         if self.is_playing:
             self.stop_playing()
         else:
-            self.play_last_station()
+            self.play_current_station()
 
     def stop_playing(self):
         self.media_player.stop()
@@ -326,9 +328,9 @@ class Controller:
         self.fr_volume.stopped()
         self.fr_info.stopped()
 
-    def play_last_station(self):
-        station_data = self.config.get_last_station_data()
-        self.play_station(station_data, self.config.last_station)
+    def play_current_station(self):
+        station_data = self.config.get_station_data_by_name(self.current_station_name)
+        self.play_station(station_data, self.current_station_idx)
 
     #TODO get rid of idx
     def play_station(self, new_station_data, new_station_idx):
@@ -342,15 +344,17 @@ class Controller:
             self.is_playing=True
             self.fr_volume.playing()
             self.config.change_property("last_station", self.current_station_idx)
-            self.config.change_property("last_favlist_name", self.config.last_favlist_name)
+            self.config.change_property("last_favlist_name", self.current_favlist_name)
             self.config.change_property("last_station_url", new_station_data.url)
             self.config.change_property("last_station_logo", new_station_data.logo)
             self.config.change_property("last_station_name", new_station_data.name)
             self.current_station_idx = new_station_idx
+            self.current_station_name = new_station_data.name
             self.fr_stations.playing()
             self.fr_info.playing()
             self.prev = ""
             self.update_meta_info()
+            self.config.to_json()
         else:
             print(f"new_station_data = {new_station_data} is empty!")
 

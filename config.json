@@ -1,34 +1,34 @@
 {
-        "favorites": [
-                {
-                        "name": "Tanja",
-                        "file": "fav_tanja.json"
-                },
-                {
-                        "name": "Sven",
-                        "file": "fav_sven.json"
-                },
-                {
-                        "name": "Nachrichten",
-                        "file": "fav_news.json"
-                },
-                {
-                        "name": "60,70,80,90er",
-                        "file": "fav_80er.json"
-                },
-                {
-                        "name": "International",
-                        "file": "fav_international.json"
-                }
-        ],
-        "favorites_dir": "favorites",
-        "last_favlist": 1,
-        "last_favlist_name": "Sven",
-        "last_station": 2,
-        "last_station_name": "Radio Bremen 2",
-        "last_station_url": "http://icecast.radiobremen.de/rb/bremenzwei/live/mp3/128/stream.mp3",
-        "last_station_logo": "rb2.jpg",
-        "last_volume": 36,
-        "screensaver_after_s": 9,
-        "auto_save_config": true
+    "favorites": [
+        {
+            "name": "Tanja",
+            "file": "fav_tanja.json"
+        },
+        {
+            "name": "Sven",
+            "file": "fav_sven.json"
+        },
+        {
+            "name": "Nachrichten",
+            "file": "fav_news.json"
+        },
+        {
+            "name": "60,70,80,90er",
+            "file": "fav_80er.json"
+        },
+        {
+            "name": "International",
+            "file": "fav_international.json"
+        }
+    ],
+    "favorites_dir": "favorites",
+    "last_favlist": 1,
+    "last_favlist_name": "60,70,80,90er",
+    "last_station": 3,
+    "last_station_name": "FluxFM 70er",
+    "last_station_url": "http://streams.fluxfm.de/70er/mp3-320/streams.fluxfm.de/",
+    "last_station_logo": "dummy.jpg",
+    "last_volume": 80,
+    "screensaver_after_s": 9,
+    "auto_save_config": true
 }

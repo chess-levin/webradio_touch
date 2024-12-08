@@ -40,11 +40,13 @@ class Config:
     last_volume: int
     screensaver_after_s: int
     auto_save_config: bool
-    is_dirty = False
+    is_dirty: bool = False
+    filepath: str = None
+    all_stations_dict = {}
 
     @staticmethod
-    def from_json(filepath: str) -> 'Config':
-        with open(filepath, 'r') as file:
+    def from_json(config_filepath: str) -> 'Config':
+        with open(config_filepath, 'r') as file:
             data = json.load(file)
             favorites_dict = {}
             for favorite in data['favorites']:
@@ -60,7 +62,8 @@ class Config:
                 last_station_logo=data['last_station_logo'],
                 last_volume=data['last_volume'],
                 screensaver_after_s=data['screensaver_after_s'],
-                auto_save_config=data['auto_save_config']
+                auto_save_config=data['auto_save_config'],
+                filepath = config_filepath
             )
 
     def to_json(self):
@@ -77,13 +80,11 @@ class Config:
             'screensaver_after_s': self.screensaver_after_s,
             'auto_save_config': self.auto_save_config
         }
-        with open('test_config.json', 'w') as file:
+        with open(self.filepath, 'w') as file:
             json.dump(data, file, indent=4)
 
     def get_last_station_data(self):
-        return RadioStation(name=self.last_station_name,
-                            url=self.last_station_url,
-                            logo=self.last_station_logo)
+        return RadioStation(name=self.last_station_name, url=self.last_station_url, logo=self.last_station_logo)
 
     def get_favlist_by_idx(self, idx):
         for i, name in enumerate(self.favorites_dict.keys()):
@@ -100,6 +101,11 @@ class Config:
         else:
             print(f"Error: Config property '{prop_name}' does not exist.")
 
+
+    def __post_init__(self):
+        self.all_stations_dict = self.get_all_stations_dict()
+        print(f"all {len(self.all_stations_dict)} stations:  {self.all_stations_dict} ")
+
     def get_all_stations_dict(self):
         all_stations = {}
         for i, name in enumerate(self.favorites_dict.keys()):
@@ -110,6 +116,9 @@ class Config:
                     all_stations[station.name] = station
 
         return all_stations
+
+    def get_station_data_by_name(self, name):
+        return self.all_stations_dict.get(name)
 
 
 #_favorites_path = 'favorites'
