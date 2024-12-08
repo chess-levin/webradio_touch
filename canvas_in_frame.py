@@ -32,17 +32,13 @@ class MyCanvas(tk.Canvas):
         self.bg_image = self.load_bg_image(self.image_path_list[self.image_index])
         #self.canvas = tk.Canvas(root, width=_win_width, height=_win_height)
 
-        #self.grid(row=0, column=0, sticky="nsew")
+        self.grid(row=0, column=0, sticky="nsew")
 
         self.c_bg_img = self.create_image(0, 0, image=self.bg_image, anchor="nw")
 
         self.tag_bind(self.c_bg_img, '<Button-1>', self.stop)
 
         self.c_text_dt = self.create_text( int(_win_width/2), 10, text = "HH:MM:SS", font = ctki.CTkFont(size=28, weight="bold"), fill='white', anchor="n") 
-
-        # Erstellen des Frames für den Inhalt
-        #self.content_frame = tk.Frame(self, bg="white")
-        #tk.Label(self.content_frame, text="F R A M E").grid(row=0, column=0)
 
         self.after(1000, self.update_datetime)
 
@@ -107,7 +103,7 @@ class MyFrame(ctki.CTkFrame):
         self.grid_rowconfigure(0)
         self.grid(row=0, column=0, padx=0, pady=0)
 
-        ctki.CTkLabel(self, text="TEST", width=640, height=200).grid(row=0, column=0, padx=0, pady=0, sticky="news")
+        ctki.CTkLabel(self, text="TEST").grid(row=0, column=0, padx=0, pady=0, sticky="news")
 
 
 class App(ctki.CTk):
@@ -119,8 +115,10 @@ class App(ctki.CTk):
         self.cont = 0
 
         self.title("RADIO & SHOWER")
+        
         #self.geometry(f"{_win_width}x{_win_height}")
-        #self.geometry("1280x400")
+        self.geometry("1280x400")
+        self.resizable(False, False)
 
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
@@ -149,7 +147,7 @@ class App(ctki.CTk):
         self.switch()
 
     def switch(self):
-        self.content[self.cont].grid(row=0, column=0, padx=0, pady=0, sticky="news")
+        self.content[self.cont].grid(row=0, column=0, padx=0, pady=0) #, sticky="news"
         
         self.cont += 1
         if self.cont > 1:
@@ -158,10 +156,6 @@ class App(ctki.CTk):
         self.content[self.cont].grid_forget()
 
         self.after(5000, self.switch)
-
-
-
-
 
 
 def on_escape(event=None):

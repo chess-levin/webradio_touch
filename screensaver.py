@@ -9,31 +9,49 @@ import sys
 import time
 
 _kiosk_screen_size = (1280, 400)
+_check_inactivity_ms = 1000
 
 _image_path = "gallery/private/"
+# aspect ratio 1280 x 400
 _images = ["20220809_144810.jpg", "20230818_121739.jpg", "20230910_165329-01.jpg"]
 _img_timeout_ms = 5000
-
-import psutil
-
-# Get the current process
-process = psutil.Process()
-
 
 class ImageCanvasFrame(ctk.CTkCanvas):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.original_image = None
         self.font = ctk.CTkFont(size=45, weight="bold")
+        self.datetime_format_str = '%A, %d. %B %H:%M:%S'
         self.img_no = 0
         self.photo_image = None
         self.datetime_text = None
         self.dia_image = None
+        self.tid_tick = None
+        self.tid_dia_show = None
         self.text_positions = ['sw', 'se', 'nw', 'ne', 'center']
         self.current_text_pos = 'sw'
         self.bind("<Configure>", self.resize_canvas)
-        self.next_image()
-        self.next_tick()
+
+    def grid(self, *args, **kwargs):
+        super().grid(*args, **kwargs)
+        self.start()
+
+    def grid_remove(self):
+        self.stop()
+        super().grid_remove()
+
+    def start(self):
+        if not self.tid_dia_show:
+            self.next_image()
+            print("Started next_image of ImageCanvasFrame")
+        if not self.tid_tick:
+            self.next_tick()
+            print("Started next_tick of ImageCanvasFrame")
+
+    def stop(self):
+        self.after_cancel(self.tid_tick)
+        self.after_cancel(self.tid_dia_show)
+        print("Stopped timers of ImageCanvasFrame")
 
     def resize_canvas(self, event=None):
         wininfo_width = self.winfo_width()
@@ -42,6 +60,7 @@ class ImageCanvasFrame(ctk.CTkCanvas):
         resized_image = self.original_image.resize((wininfo_width, wininfo_height), Image.Resampling.LANCZOS)
         self.photo_image = ImageTk.PhotoImage(resized_image)
         self.dia_image = self.create_image(0, 0, anchor="nw", image=self.photo_image)
+        self.datetime_text = None
         self.show_datetime()
 
     def load_image(self, image_name):
@@ -57,10 +76,10 @@ class ImageCanvasFrame(ctk.CTkCanvas):
         if self.img_no >= len(_images):
             self.img_no = 0
 
-        self.after(_img_timeout_ms, self.next_image)
+        self.tid_dia_show = self.after(_img_timeout_ms, self.next_image)
 
     def show_datetime(self):
-        time_string = time.strftime('%A, %d. %B %H:%M:%S')
+        time_string = time.strftime(self.datetime_format_str)
 
         if self.datetime_text:
             self.itemconfig(self.datetime_text, text=time_string)
@@ -84,16 +103,10 @@ class ImageCanvasFrame(ctk.CTkCanvas):
 
     def next_tick(self):
         self.show_datetime()
-
-        #memory_usage = process.memory_info().rss
-        # Convert to megabytes
-        #memory_usage_mb = memory_usage / (1024 * 1024)
-        #print(f"Memory usage: {memory_usage_mb:.2f} MB")
-
-        self.after(1000, self.next_tick)
+        self.tid_tick = self.after(1000, self.next_tick)
 
 
-class ImageFrame(ctk.CTkFrame):
+class ImageLabelFrame(ctk.CTkFrame):
     def __init__(self, master, *args, **kwargs):
         super().__init__(master, *args, **kwargs)
         self.img_no = 0
@@ -113,9 +126,6 @@ class ImageFrame(ctk.CTkFrame):
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
-
-        self.next_tick()
-        self.next_image()
 
     def load_image(self, image_name ):
         return Image.open(os.path.join(_image_path, image_name))
@@ -170,8 +180,6 @@ class App(ctk.CTk):
         self.grid_columnconfigure(0, weight=1)
 
         self.image_frame = ImageCanvasFrame(self, width=_kiosk_screen_size[0], height=_kiosk_screen_size[1])
-        self.image_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
-        self.image_frame.grid_remove()
 
         self.update_size()
 
@@ -188,22 +196,28 @@ class App(ctk.CTk):
 
     def reset_timer(self, event=None):
         self.last_activity_time = time.time()
-        self.is_screensaver_on = False
-        self.image_frame.grid_remove()
-        self.radio_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
+        if self.is_screensaver_on:
+            #self.image_frame.stop()
+            self.image_frame.grid_remove()
+            self.is_screensaver_on = False
+            print("Image screensaver stopped")
+            self.radio_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
+        else:
+            None
 
     def check_inactivity(self):
         current_time = time.time()
         if current_time - self.last_activity_time > self.inactivity_period_s:
             self.on_inactivity()
-        self.after(1000, self.check_inactivity)
+        self.after(_check_inactivity_ms, self.check_inactivity)
 
     def on_inactivity(self):
         if not self.is_screensaver_on:
             print(f"No activity within the last period of {self.inactivity_period_s} seconds, switching to screensaver mode")
+            self.is_screensaver_on = True
+            #self.image_frame.start()
             self.radio_frame.grid_remove()
             self.image_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
-            self.is_screensaver_on = True
 
     def update_size(self, event=None):
         width = self.winfo_width()

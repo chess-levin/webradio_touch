@@ -12,6 +12,8 @@ import sys
 import os
 import random
 
+from diashow_saver import DiaShowCanvas
+
 
 ctki.set_appearance_mode("dark")  # Modes: "System" (standard), "Dark", "Light"
 ctki.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -25,7 +27,6 @@ _favorites_path         = "favorites"
 _stations_logos_path    = "logos"
 _stations_logos_glob    = os.path.join(_stations_logos_path, "*.??g")
 
-_gallery_glob           = os.path.join("gallery","private","*.??g")
 
 _dummy_logo_fn          = "dummy.jpg"
 _station_default_logo_path = os.path.join(_stations_logos_path, _dummy_logo_fn)
@@ -37,8 +38,6 @@ _screensaver_jump_ms    = 15000
 
 _station_btn_size       = 190
 _logo_size              = _station_btn_size - 40
-
-_next_dia_after_s = 20
 
 _check_for_screensaver_ms = 5000
 _check_config_is_dirty_s = 4
@@ -163,74 +162,8 @@ class MyConfig:
 
 # ---- Screensaver classes
 
-class DiaShowCanvas(tk.Canvas):
-    
-    def __init__(self, root, return_to_radio_func):
+# https://www.tutorialspoint.com/how-to-set-the-canvas-size-properly-in-tkinter
 
-        super().__init__(root, width=_win_width, height=_win_height)
-        
-        self.return_to_radio_func = return_to_radio_func
-        self.image_path_list = []
-        self.counter = 0
-        self.image_index = 0
-
-        self.scan_gallery()
-
-        self.bg_image = self.load_bg_image(self.image_path_list[self.image_index])
-        self.c_bg_img = self.create_image(0, 0, image=self.bg_image, anchor="nw")
-        self.tag_bind(self.c_bg_img, '<Button-1>', self.stop)
-
-        self.c_text_dt = self.create_text(_win_width/2, 10, text = "HH:MM:SS", font = ctki.CTkFont(size=28, weight="bold"), fill='white', anchor="n") 
-
-
-    def load_bg_image(self, path):
-        img =  Image.open(path)
-        print (f"Loaded {path} dim: ({img.width}x{img.height}), 1:{(img.width / img.height):.2f}")
-        img = img.resize((_win_width, _win_height))
-        print (f"resized to ({img.width}x{img.height})")
-        return ImageTk.PhotoImage(img)
-    
-    def show_next_image(self):
-        self.image_index = random.randint(0, len(self.image_path_list)-1)
-        print("self.image_index=",self.image_index)
-        self.bg_image = self.load_bg_image(self.image_path_list[self.image_index])
-        self.itemconfig(self.c_bg_img, image=self.bg_image)
-
-    def update_time(self):
-        self.counter += 1
-
-        t = time.strftime('%H:%M:%S, %A, %B %d')
-        self.itemconfig(self.c_text_dt, text=t)
-
-        s = time.strftime('%S')
-        if (int(s) % _next_dia_after_s == 0):
-            self.show_next_image()
-
-        self.tid_update_time = self.after(1000, self.update_time)
-    
-    def scan_gallery(self):
-        print(f"Scanning galerie folder {_gallery_glob}")
-
-        for filename in glob.glob(_gallery_glob, recursive=False):
-            try:
-                img = Image.open(filename)
-                print (f"registered {filename} dim: ({img.width}x{img.height}), 1:{(img.width / img.height):.2f}")
-                self.image_path_list.append(filename)
-            except OSError as e:
-                print(f"Unable to open image {filename}. Check image format. Details : {e}", file=sys.stderr)
-
-        print(f"Galerie contains {len(self.image_path_list)} pictures")
-        return len(self.image_path_list)
-
-    def stop(self, event):
-        print("Stop Screensaver")
-        self.after_cancel(self.tid_update_time)
-        self.return_to_radio_func()
-
-    def activate(self):
-        self.grid(row=0, column=0, padx=0, pady=0, sticky="news")
-        self.counter = 0
-        self.tid_update_time = self.update_time()
 
 
 class FrameScreensaverDigiClockContent(ctki.CTkFrame):
@@ -505,7 +438,7 @@ class FrameStations(ctki.CTkScrollableFrame):
         return self.favorite_data[self.active_fav_list_idx]
 
     def setup_station_slots(self):
-        '''create station slot buttons'''
+        """create station slot buttons"""
         
         for i, station in enumerate(self.get_station_data()):
             logo_fn = station["logo"]
@@ -537,7 +470,6 @@ class FrameStations(ctki.CTkScrollableFrame):
         self.func_reset_timestamp()
         self.select_station(i)
         self.media_player.play()
-        print(f"self.media_player.is_playing()={self.media_player.is_playing()}")
         self.func_change_is_playing(True)
 
     # https://stackoverflow.com/questions/70509728/how-to-get-audiostream-metadata-using-vlc-py
@@ -550,9 +482,11 @@ class FrameStations(ctki.CTkScrollableFrame):
                 self.prev = meta
                 station_name = self.get_station_data()[self.now_playing_idx]["name"]
                 if meta is None:
+                    print("if meta is None:")
                     meta = _str_no_info
                 
                 if not self.media_player.is_playing():
+                    print("if not self.media_player.is_playing():")
                     meta = _str_stopped
                     
                 print(f"Now playing {station_name}: {meta}")
@@ -653,7 +587,11 @@ class App(ctki.CTk):
         # configure window
         self.title("RADIO & SHOWER")
         self.geometry(f"{_win_width}x{_win_height}")
+        self.resizable(False, False)
         self.set_icon()
+
+        print(f"self.winfo_width x self.winfo_height() = {self.winfo_width()}x{self.winfo_height()}")
+        print(f"self._current_width x self._current_height = {self._current_width}x{self._current_height}")
 
         if not _kiosk_mode:
         # fixed window size 
@@ -679,7 +617,7 @@ class App(ctki.CTk):
         self.grid_rowconfigure(0, weight=1)
 
         self.content_frames.append(FrameScreensaverPlayingContent(self, self.show_radio_content, self.logos, self.media_player))
-        self.content_frames.append(DiaShowCanvas(self, self.show_radio_content))
+        self.content_frames.append(DiaShowCanvas(self, _win_width,_win_height, self.show_radio_content))
         #self.content_frames.append(FrameScreensaverDigiClockContent(self, self.show_radio_content))
         self.content_frames.append(FrameRadioContent(self, self.my_config, self.vlc_instance, self.media_player, self.logos, self.favorite_data, self.content_frames[0].update_titel_info, self.reset_timestamp))
         self.content_frames[2].grid()
@@ -716,6 +654,11 @@ class App(ctki.CTk):
     def check_for_screensaver(self):
         elapsed_time = time.time() - self.current_timestamp
         #print(f"Elapsed time (s) since last button pressed: {elapsed_time}")
+
+        print(f"self.winfo_width x self.winfo_height() = {self.winfo_width()}x{self.winfo_height()}")
+        print(f"self._current_width x self._current_height = {self._current_width}x{self._current_height}")
+
+
         if (elapsed_time > self.my_config.get("screensaver_after_s")):
             self.show_screensaver()
         else:
@@ -735,7 +678,7 @@ class App(ctki.CTk):
                 img = default_logo
             
             self.logos[os.path.basename(filename)] = ctki.CTkImage(img, size=(_logo_size, _logo_size))
-            print(f"added new logo 'f{os.path.basename(filename)}'")
+            print(f"added new logo '{os.path.basename(filename)}'")
 
         print(f"Loaded {len(self.logos)} logos")
 

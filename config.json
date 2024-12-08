@@ -21,9 +21,14 @@
                         "file": "fav_international.json"
                 }
         ],
+        "favorites_dir": "favorites",
         "last_favlist": 1,
+        "last_favlist_name": "Sven",
         "last_station": 2,
-        "last_volume": 24,
+        "last_station_name": "Radio Bremen 2",
+        "last_station_url": "http://icecast.radiobremen.de/rb/bremenzwei/live/mp3/128/stream.mp3",
+        "last_station_logo": "rb2.jpg",
+        "last_volume": 36,
         "screensaver_after_s": 9,
         "auto_save_config": true
 }

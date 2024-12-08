@@ -1,5 +1,5 @@
 import customtkinter as ctki
-from PIL import Image
+from PIL import Image, ImageTk
 import glob
 import sys
 import random
@@ -41,9 +41,9 @@ class FrameScreensaverPictureContent(ctki.CTkFrame):
         self.image_path_list = []
         self.scan_galery()
 
-        img = Image.open(self.image_path_list[0])
+        #img = Image.open(self.image_path_list[0])
         
-        self.la_image = ctki.CTkLabel(master=parent, image=ctki.CTkImage(img, size=(_win_width, _win_height)), 
+        self.la_image = ctki.CTkLabel(master=parent, image=self.load_bg_image(self.image_path_list[0]),
                                       fg_color='transparent', text=self.currentDatetime(), anchor="s",
                                       font=ctki.CTkFont(size=60, weight="normal"), text_color="white")
         self.la_image.grid(row=0, column=0)
@@ -75,10 +75,19 @@ class FrameScreensaverPictureContent(ctki.CTkFrame):
         print(f"Galerie contains {len(self.image_path_list)} pictures")
 
     def show_next_image(self, image_index):
-        print("self.image_index=",image_index)
-        next_image = ctki.CTkImage(Image.open(self.image_path_list[image_index]), size=(_win_width, _win_height))
+        print("self.image_index=", image_index)
+        next_image = ctki.CTkImage(self.load_bg_image(self.image_path_list[image_index]))
         self.la_image.configure(image = next_image)
-       
+
+    def load_bg_image(self, path):
+        img =  Image.open(path)
+        print (f"Loaded {path} dim: ({img.width}x{img.height}), 1:{(img.width / img.height):.2f}")
+        
+        if (img.width != _win_width) or (img.height != _win_height):
+            img = img.resize((_win_width, _win_height))
+            print (f"Image resized to ({img.width}x{img.height})")
+
+        return img
 
     def update_time(self):
         self.time += 1
