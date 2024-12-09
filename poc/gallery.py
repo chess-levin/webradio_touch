@@ -12,33 +12,64 @@ import glob
 _win_width  = 1280
 _win_height = 400
 
-_gallery_glob = os.path.join("gallery", "private", "*.??g")
+_gallery_glob = os.path.join("../gallery", "private", "*.??g")
 
 ctki.set_appearance_mode("dark")  # Modes: "System" (standard), "Dark", "Light"
 ctki.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green", "dark-blue"
 
-class MyCanvas(tk.Canvas):
-    
-    def __init__(self, root, **kwargs):
+class App(ctki.CTk):
 
-        super().__init__(root, width=_win_width, height=_win_height)
+    def __init__(self, fullscreen):
+        super().__init__()
+
+        self.fullscreen = fullscreen
+
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        print(f"screen_width x screen_height = {screen_width}x{screen_height}")
+
+        print("Configure kiosk fullscrenn mode:", self.fullscreen)
+
+        if self.fullscreen:
+            self.attributes("-fullscreen", True) # run fullscreen
+            self.wm_attributes("-topmost", True) # keep on top
+        
+
+        self.title("RADIO & SHOWER")
+        #self.geometry(f"{_win_width}x{_win_height}")
+        #self.geometry("1280x400")
+
+        #self.minsize(_win_width, _win_height)
+        #self.maxsize(_win_width, _win_height)
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
         self.image_path_list = []
+
         self.counter = 0
         self.image_index = 0
+        self.is_canvas = True
 
         self.scan_gallery()
 
+        # Laden des Hintergrundbildes
         self.bg_image = self.load_bg_image(self.image_path_list[self.image_index])
-        #self.canvas = tk.Canvas(root, width=_win_width, height=_win_height)
 
-        self.grid(row=0, column=0, sticky="nsew")
+        # Erstellen des Canvas
+        self.canvas = tk.Canvas(self, width=_win_width, height=_win_height)
 
-        self.c_bg_img = self.create_image(0, 0, image=self.bg_image, anchor="nw")
+        self.canvas.grid(row=0, column=0, sticky="nsew")
 
-        self.tag_bind(self.c_bg_img, '<Button-1>', self.stop)
+        self.c_bg_img = self.canvas.create_image(0, 0, image=self.bg_image, anchor="nw")
 
-        self.c_text_dt = self.create_text( int(_win_width/2), 10, text = "HH:MM:SS", font = ctki.CTkFont(size=28, weight="bold"), fill='white', anchor="n") 
+        self.canvas.tag_bind(self.c_bg_img, '<Button-1>', self.stop)
+
+        self.c_text_dt = self.canvas.create_text( int(_win_width/2), 10, text = "HH:MM:SS", font = ctki.CTkFont(size=28, weight="bold"), fill='white', anchor="n") 
+
+        # Erstellen des Frames für den Inhalt
+        self.content_frame = tk.Frame(self, bg="white")
+        tk.Label(self.content_frame, text="F R A M E").grid(row=0, column=0)
 
         self.after(1000, self.update_datetime)
 
@@ -53,13 +84,13 @@ class MyCanvas(tk.Canvas):
         self.image_index = random.randint(0, len(self.image_path_list)-1)
         print("self.image_index=",self.image_index)
         self.bg_image = self.load_bg_image(self.image_path_list[self.image_index])
-        self.itemconfig(self.c_bg_img, image=self.bg_image)
+        self.canvas.itemconfig(self.c_bg_img, image=self.bg_image)
 
     def update_datetime(self):
         self.counter += 1
 
         t = time.strftime('%H:%M:%S, %A, %B %d')
-        self.itemconfig(self.c_text_dt, text=t)
+        self.canvas.itemconfig(self.c_text_dt, text=t)
 
         if (self.counter == 5):
             self.show_next_image()
@@ -92,70 +123,6 @@ class MyCanvas(tk.Canvas):
     def switch_to_canvas(self):
         self.content_frame.grid_forget()
         self.canvas.grid(row=0, column=0, sticky="nsew")
-
-
-class MyFrame(ctki.CTkFrame):
-
-     def __init__(self, root):
-        super().__init__(root)
-
-        self.grid_columnconfigure(0)
-        self.grid_rowconfigure(0)
-        self.grid(row=0, column=0, padx=0, pady=0)
-
-        ctki.CTkLabel(self, text="TEST").grid(row=0, column=0, padx=0, pady=0, sticky="news")
-
-
-class App(ctki.CTk):
-
-    def __init__(self, fullscreen):
-        super().__init__()
-
-        self.fullscreen = fullscreen
-        self.cont = 0
-
-        self.title("RADIO & SHOWER")
-        
-        #self.geometry(f"{_win_width}x{_win_height}")
-        self.geometry("1280x400")
-        self.resizable(False, False)
-
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
-        print(f"screen_width x screen_height = {screen_width}x{screen_height}")
-
-        print("Configure kiosk fullscrenn mode:", self.fullscreen)
-
-        if self.fullscreen:
-            self.attributes("-fullscreen", True) # run fullscreen
-            self.wm_attributes("-topmost", True) # keep on top
-        
-
-        #self.minsize(_win_width, _win_height)
-        #self.maxsize(_win_width, _win_height)
-
-        self.resizable(False, False)
-
-        self.grid_rowconfigure(0)
-        self.grid_columnconfigure(0)
-
-        self.content = []
-
-        self.content.append(MyCanvas(self))
-        self.content.append(MyFrame(self))
-
-        self.switch()
-
-    def switch(self):
-        self.content[self.cont].grid(row=0, column=0, padx=0, pady=0) #, sticky="news"
-        
-        self.cont += 1
-        if self.cont > 1:
-            self.cont = 0
-
-        self.content[self.cont].grid_forget()
-
-        self.after(5000, self.switch)
 
 
 def on_escape(event=None):

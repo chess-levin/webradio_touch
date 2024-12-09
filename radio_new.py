@@ -118,8 +118,6 @@ class FrameStations(ctk.CTkScrollableFrame):
         super().__init__(parent, orientation='horizontal')
         self.parent = parent
         self.controller = controller
-        self.logos = {}
-        self.favorite_data = []
         self.btn_station_slot = []
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
@@ -139,7 +137,8 @@ class FrameStations(ctk.CTkScrollableFrame):
             logo_img = self.controller.logos.get_image_as_ctk(logo_fn, _logo_size)
             btn_text = station.name
 
-            btn_station_slot = ctk.CTkButton(master=self, compound="top", text=btn_text, image=logo_img, command=partial(self.btn_play_station_cb, i))
+            btn_station_slot = ctk.CTkButton(master=self, compound="top", text=btn_text, image=logo_img,
+                                             command=partial(self.btn_play_station_cb, i))
             btn_station_slot.grid(row=0, column=i, padx=5, pady=7)
 
             if logo_fn == _station_empty_logo_fn:
@@ -203,8 +202,7 @@ class FrameVolume(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
 
         self.btn_mute = ctk.CTkButton(master=self, text=_str_mute, width=_station_btn_size, height=40,
-                                       command=self.btn_mute_cb, state='disabled',
-                                       font=ctk.CTkFont(size=18, weight="bold"))
+                                       command=self.btn_mute_cb, state='disabled', font=ctk.CTkFont(size=18, weight="bold"))
         self.btn_mute.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         self.sl_volume = (ctk.CTkSlider(master=self, from_=0, to=100, width=250, command=self.volume_slider_event_cb))
@@ -244,16 +242,19 @@ class FrameVolume(ctk.CTkFrame):
 
 class FrameInfo(ctk.CTkFrame):
 
-    def __init__(self, parent):
+    def __init__(self, parent, controller):
         super().__init__(parent)
+
+        self.controller = controller
 
         self.grid_columnconfigure(0, weight=1)
 
-        # create station-title-meta-data label
-        self.la_title = ctk.CTkLabel(master=self, text=_str_stopped, fg_color="transparent", font= ctk.CTkFont(size=20, weight="bold"))
+        self.station_name = self.controller.config.last_station_name
+        self.title = _str_stopped
+
+        self.la_title = ctk.CTkLabel(master=self, text=f"{self.station_name}: {self.title}", fg_color="transparent", font= ctk.CTkFont(size=20, weight="bold"))
         self.la_title.grid(row=0, column=0, sticky="w")
 
-        # create date-time label
         self.la_datetime = ctk.CTkLabel(master=self, text="Datetime", fg_color="transparent", font= ctk.CTkFont(size=20, weight="bold"))
         self.la_datetime.grid(row=0, column=1)
 
@@ -261,10 +262,6 @@ class FrameInfo(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight=1)
 
         self.datetime_tid = None
-
-        #TODO config last_station
-        self.station_name = ""
-        self.title = ""
 
         self.update_datetime()
 
@@ -356,7 +353,7 @@ class Controller:
             self.update_meta_info()
             self.config.to_json()
         else:
-            print(f"new_station_data = {new_station_data} is empty!")
+            print(f"Can't play station, cause new_station_data = {new_station_data} is empty!")
 
     # https://stackoverflow.com/questions/70509728/how-to-get-audiostream-metadata-using-vlc-py
     def update_meta_info(self):
@@ -366,14 +363,15 @@ class Controller:
             meta = self.Media.get_meta(12) # vlc.Meta 12: 'NowPlaying',
             if meta != self.prev:
                 self.prev = meta
-                station_name = self.get_station_data(favlist_name=self.current_favlist_name, station_idx=self.current_station_idx).name
+
+                station_name = self.current_station_name
                 if meta is None:
                     print("if meta is None:")
                     meta = _str_no_info
 
-                if not self.media_player.is_playing():
-                    print("if not self.media_player.is_playing():")
-                    meta = _str_stopped
+                #if not self.media_player.is_playing():
+                #    print("if not self.media_player.is_playing():")
+                #    meta = _str_stopped
 
                 print(f"Now playing {station_name}: {meta}")
                 self.fr_info.update_media(station_name, meta)
@@ -426,13 +424,14 @@ class Controller:
 
 class RadioFrame(ctk.CTkFrame):
 
-    def __init__(self, master, *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
+    def __init__(self, parent, width, height, config):
+        super().__init__(parent)
 
-        self.controller = Controller(Config.from_json(_config_json_path))
+        self.config = config
+        self.controller = Controller(self.config)
         self.grid_columnconfigure(0, weight=1)
         #self.grid_rowconfigure((0,1,2,3), weight=1)
-        self.controller.fr_info = FrameInfo(self)
+        self.controller.fr_info = FrameInfo(self, controller = self.controller)
         self.controller.fr_volume = FrameVolume(self, controller = self.controller)
         self.controller.fr_stations = FrameStations(self, controller = self.controller)
         self.controller.fr_favs = FrameFavs(self, controller = self.controller)
@@ -452,22 +451,53 @@ class App(ctk.CTk):
         self.is_screensaver_on = False
         self.attributes("-fullscreen", kiosk_mode) # run fullscreen
         self.wm_attributes("-topmost", kiosk_mode) # keep on top
-
+        self.config = Config.from_json(_config_json_path)
         #self.my_config = MyConfig(_check_config_is_dirty_s)
 
         self.last_activity_time = time.time()
-        self.inactivity_period_s = 5  # in seconds
-        self.title("Screensaver")
+        self.inactivity_period_s = self.config.screensaver_after_s
+        self.title("Radio Touch")
         self.geometry(f"{_kiosk_screen_size[0]}x{_kiosk_screen_size[1]}")
 
         print(f"App Window Size start ({self.winfo_width()}, {self.winfo_height()})")
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
-        self.radio_frame = RadioFrame(self, width=_kiosk_screen_size[0], height=_kiosk_screen_size[1])
+        self.radio_frame = RadioFrame(self, width=_kiosk_screen_size[0], height=_kiosk_screen_size[1], config=self.config)
         self.radio_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
 
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.bind("<Escape>", self.on_escape)
+
+        self.bind_all("<Key>", self.reset_timer)
+        self.bind_all("<Motion>", self.reset_timer)
+
+        self.check_inactivity()
+
+    def reset_timer(self, event=None):
+        self.last_activity_time = time.time()
+        if self.is_screensaver_on:
+            #self.image_frame.stop()
+            #self.image_frame.grid_remove()
+            self.is_screensaver_on = False
+            print("Activity detected. Screensaver stopped.")
+            self.radio_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
+        else:
+            None
+
+    def check_inactivity(self):
+        current_time = time.time()
+        if current_time - self.last_activity_time > self.inactivity_period_s:
+            self.on_inactivity()
+        self.after(_check_inactivity_ms, self.check_inactivity)
+
+    def on_inactivity(self):
+        if not self.is_screensaver_on:
+            print(f"No activity within the last period of {self.inactivity_period_s} seconds, switching to screensaver mode")
+            self.is_screensaver_on = True
+            #self.image_frame.start()
+            #self.radio_frame.grid_remove()
+            #self.image_frame.grid(row=0, column=0, padx=0, pady=0, sticky="news")
 
     def on_closing(self):
         # Your custom code here
@@ -476,6 +506,9 @@ class App(ctk.CTk):
         self.radio_frame.controller.close_app()
 
         self.destroy()
+
+    def on_escape(self, event=None):
+        self.on_closing()
 
 
 print(f"sys.argv={sys.argv}, len(sys.argv)={len(sys.argv)}")

@@ -101,7 +101,6 @@ class Config:
         else:
             print(f"Error: Config property '{prop_name}' does not exist.")
 
-
     def __post_init__(self):
         self.all_stations_dict = self.get_all_stations_dict()
         print(f"all {len(self.all_stations_dict)} stations:  {self.all_stations_dict} ")
@@ -118,7 +117,10 @@ class Config:
         return all_stations
 
     def get_station_data_by_name(self, name):
-        return self.all_stations_dict.get(name)
+        data = self.all_stations_dict.get(name)
+        if data is None:
+            print(f"Station data for '{name}' does not exist.")
+        return data
 
 
 #_favorites_path = 'favorites'

@@ -11,7 +11,7 @@ import time
 _kiosk_screen_size = (1280, 400)
 _check_inactivity_ms = 1000
 
-_image_path = "gallery/private/"
+_image_path = "../gallery/private/"
 # aspect ratio 1280 x 400
 _images = ["20220809_144810.jpg", "20230818_121739.jpg", "20230910_165329-01.jpg"]
 _img_timeout_ms = 5000

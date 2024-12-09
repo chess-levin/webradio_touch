@@ -4,7 +4,7 @@ import os
 
 _kiosk_screen_size = (1280, 400)
 
-_image_path = "gallery/private/"
+_image_path = "../gallery/private/"
 _images = ["20220809_144810.jpg", "20230818_121739.jpg", "20230910_165329-01.jpg"]
 
 class CustomCanvas(tk.Canvas):

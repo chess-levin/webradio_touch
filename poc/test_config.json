@@ -22,13 +22,9 @@
         }
     ],
     "favorites_dir": "favorites",
-    "last_favlist": 1,
-    "last_favlist_name": "International",
+    "last_favlist": 4,
     "last_station": 4,
-    "last_station_name": "KCRW ECLECTIC24",
-    "last_station_url": "https://streams.kcrw.com/e24_mp3?aw_0_1st.playerid=KCRW_Website",
-    "last_station_logo": "kcrw_e24.png",
-    "last_volume": 52,
+    "last_volume": 36,
     "screensaver_after_s": 9,
     "auto_save_config": true
 }

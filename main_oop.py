@@ -21,7 +21,7 @@ ctki.set_default_color_theme("dark-blue")  # Themes: "blue" (standard), "green",
 _win_width  = 1280
 _win_height = 400
 
-_icon_path              = "radio_icon.png"
+_icon_path              = "icons/radio_icon.png"
 _config_json_path       = "config.json"
 _favorites_path         = "favorites"
 _stations_logos_path    = "logos"
